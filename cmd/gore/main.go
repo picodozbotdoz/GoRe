@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"github.com/user/gore/internal/config"
 	"github.com/user/gore/internal/server"
@@ -24,12 +25,14 @@ func main() {
 	srv := server.New(cfg)
 
 	quit := make(chan os.Signal, 1)
-	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
 
 	go func() {
 		<-quit
 		log.Println("shutting down...")
-		srv.Stop(context.Background())
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		srv.Stop(ctx)
 	}()
 
 	if err := srv.Start(); err != nil {

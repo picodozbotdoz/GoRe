@@ -1,6 +1,7 @@
 package proxy
 
 import (
+	"crypto/tls"
 	"log"
 	"net"
 	"net/http"
@@ -38,13 +39,22 @@ func (u *Upstream) director(req *http.Request) {
 	if server == nil {
 		return
 	}
+
 	target, err := url.Parse("http://" + server.Addr)
 	if err != nil {
 		return
 	}
+
 	req.URL.Scheme = target.Scheme
 	req.URL.Host = target.Host
+
 	req.Header.Set("X-Forwarded-For", req.RemoteAddr)
+	req.Header.Set("X-Forwarded-Host", req.Host)
+	req.Header.Set("X-Forwarded-Proto", "http")
+
+	if req.TLS != nil {
+		req.Header.Set("X-Forwarded-Proto", "https")
+	}
 }
 
 func (u *Upstream) transport() *http.Transport {
@@ -52,7 +62,14 @@ func (u *Upstream) transport() *http.Transport {
 		MaxIdleConns:        100,
 		MaxIdleConnsPerHost: 10,
 		IdleConnTimeout:     90 * time.Second,
-		DialContext:         (&net.Dialer{Timeout: 5 * time.Second}).DialContext,
+		DialContext: (&net.Dialer{
+			Timeout:   5 * time.Second,
+			KeepAlive: 30 * time.Second,
+		}).DialContext,
+		TLSClientConfig: &tls.Config{
+			InsecureSkipVerify: false,
+		},
+		ForceAttemptHTTP2: true,
 	}
 }
 

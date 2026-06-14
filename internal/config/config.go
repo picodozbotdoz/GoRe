@@ -7,21 +7,42 @@ import (
 )
 
 type Config struct {
-	WorkerProcesses string               `yaml:"worker_processes"`
-	Listen          []Listen             `yaml:"listen"`
-	HTTP            HTTPConfig           `yaml:"http"`
-	Upstreams       map[string]Upstream  `yaml:"upstreams"`
-	Modules         ModulesConfig        `yaml:"modules"`
+	WorkerProcesses string              `yaml:"worker_processes"`
+	Listen          []Listen            `yaml:"listen"`
+	HTTP            HTTPConfig          `yaml:"http"`
+	Upstreams       map[string]Upstream `yaml:"upstreams"`
+	Modules         ModulesConfig       `yaml:"modules"`
 }
 
 type Listen struct {
 	Addr string `yaml:"addr"`
 	TLS  *TLS   `yaml:"tls,omitempty"`
+	HTTP2 *HTTP2 `yaml:"http2,omitempty"`
 }
 
 type TLS struct {
 	Cert string `yaml:"cert"`
 	Key  string `yaml:"key"`
+}
+
+type HTTP2 struct {
+	Enabled             *bool `yaml:"enabled,omitempty"`
+	MaxConcurrentStreams int   `yaml:"max_concurrent_streams,omitempty"`
+	MaxFrameSize        int   `yaml:"max_frame_size,omitempty"`
+}
+
+func (h *HTTP2) GetMaxConcurrentStreams() int {
+	if h == nil || h.MaxConcurrentStreams == 0 {
+		return 250
+	}
+	return h.MaxConcurrentStreams
+}
+
+func (h *HTTP2) GetMaxFrameSize() int {
+	if h == nil || h.MaxFrameSize == 0 {
+		return 1048576
+	}
+	return h.MaxFrameSize
 }
 
 type HTTPConfig struct {
