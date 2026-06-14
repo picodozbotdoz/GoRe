@@ -113,3 +113,70 @@ func TestHTTP2Defaults(t *testing.T) {
 		t.Errorf("configured GetMaxConcurrentStreams() = %d, want 50", h3.GetMaxConcurrentStreams())
 	}
 }
+
+func TestHTTP3Defaults(t *testing.T) {
+	var h *HTTP3
+	if h.GetMaxStreams() != 100 {
+		t.Errorf("nil GetMaxStreams() = %d, want 100", h.GetMaxStreams())
+	}
+	if h.GetIdleTimeout() != 30 {
+		t.Errorf("nil GetIdleTimeout() = %d, want 30", h.GetIdleTimeout())
+	}
+
+	h2 := &HTTP3{}
+	if h2.GetMaxStreams() != 100 {
+		t.Errorf("empty GetMaxStreams() = %d, want 100", h2.GetMaxStreams())
+	}
+	if h2.GetIdleTimeout() != 30 {
+		t.Errorf("empty GetIdleTimeout() = %d, want 30", h2.GetIdleTimeout())
+	}
+
+	h3 := &HTTP3{MaxStreams: 50, IdleTimeout: 60}
+	if h3.GetMaxStreams() != 50 {
+		t.Errorf("configured GetMaxStreams() = %d, want 50", h3.GetMaxStreams())
+	}
+	if h3.GetIdleTimeout() != 60 {
+		t.Errorf("configured GetIdleTimeout() = %d, want 60", h3.GetIdleTimeout())
+	}
+}
+
+func TestHTTP3ConfigParsing(t *testing.T) {
+	yaml := `
+listen:
+  - addr: ":8443"
+    tls:
+      cert: server.crt
+      key: server.key
+    http2:
+      enabled: true
+    http3:
+      enabled: true
+      max_streams: 200
+      idle_timeout: 60
+`
+	tmpFile, err := os.CreateTemp("", "config-*.yaml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.Remove(tmpFile.Name())
+	tmpFile.WriteString(yaml)
+	tmpFile.Close()
+
+	cfg, err := Load(tmpFile.Name())
+	if err != nil {
+		t.Fatalf("Load() error = %v", err)
+	}
+
+	if cfg.Listen[0].HTTP3 == nil {
+		t.Fatal("Listen[0].HTTP3 is nil")
+	}
+	if cfg.Listen[0].HTTP3.Enabled == nil || !*cfg.Listen[0].HTTP3.Enabled {
+		t.Error("HTTP3.Enabled = false, want true")
+	}
+	if cfg.Listen[0].HTTP3.MaxStreams != 200 {
+		t.Errorf("HTTP3.MaxStreams = %d, want 200", cfg.Listen[0].HTTP3.MaxStreams)
+	}
+	if cfg.Listen[0].HTTP3.IdleTimeout != 60 {
+		t.Errorf("HTTP3.IdleTimeout = %d, want 60", cfg.Listen[0].HTTP3.IdleTimeout)
+	}
+}

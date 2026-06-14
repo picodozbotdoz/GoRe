@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"crypto/tls"
+	"fmt"
 	"log"
 	"net"
 	"net/http"
@@ -11,6 +12,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/quic-go/quic-go/http3"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
 
@@ -22,12 +24,13 @@ import (
 )
 
 type Server struct {
-	cfg       *config.Config
-	router    *router.Router
-	servers   []*http.Server
-	upstreams map[string]*proxy.Upstream
-	addrs     []string
-	addrMu    sync.Mutex
+	cfg        *config.Config
+	router     *router.Router
+	servers    []*http.Server
+	http3Srvs  []*http3.Server
+	upstreams  map[string]*proxy.Upstream
+	addrs      []string
+	addrMu     sync.Mutex
 }
 
 func New(cfg *config.Config) *Server {
@@ -145,17 +148,18 @@ func (s *Server) Start() error {
 				ln.Close()
 				return err
 			}
-			srv.TLSConfig = &tls.Config{
+			tlsConfig := &tls.Config{
 				Certificates: []tls.Certificate{cert},
 				NextProtos:   []string{"h2", "http/1.1"},
 			}
+			srv.TLSConfig = tlsConfig
 
 			if err := http2.ConfigureServer(srv, h2cfg); err != nil {
 				ln.Close()
 				return err
 			}
 
-			srv.Handler = s.router
+			srv.Handler = s.addAltSvcHeader(s.router, listen)
 			s.servers = append(s.servers, srv)
 			wg.Add(1)
 			go func(srv *http.Server, ln net.Listener, addr string) {
@@ -166,6 +170,30 @@ func (s *Server) Start() error {
 					log.Printf("server error: %v", err)
 				}
 			}(srv, ln, addr)
+
+			if listen.HTTP3 != nil && listen.HTTP3.Enabled != nil && *listen.HTTP3.Enabled {
+				h3Srv := &http3.Server{
+					Addr:      addr,
+					TLSConfig: tlsConfig,
+					Handler:   s.router,
+				}
+				s.http3Srvs = append(s.http3Srvs, h3Srv)
+
+				udpAddr := ln.Addr().String()
+				udpLn, err := net.ListenPacket("udp", udpAddr)
+				if err != nil {
+					log.Printf("HTTP/3 UDP listen error on %s: %v (HTTP/3 disabled)", udpAddr, err)
+				} else {
+					wg.Add(1)
+					go func(h3 *http3.Server, pc net.PacketConn) {
+						defer wg.Done()
+						log.Printf("listening on %s (HTTP/3 QUIC)", pc.LocalAddr())
+						if err := h3.Serve(pc); err != nil && err != http.ErrServerClosed {
+							log.Printf("HTTP/3 server error: %v", err)
+						}
+					}(h3Srv, udpLn)
+				}
+			}
 		} else {
 			h2Handler := h2c.NewHandler(s.router, h2cfg)
 			srv.Handler = h2Handler
@@ -195,10 +223,28 @@ func (s *Server) Addr(i int) string {
 }
 
 func (s *Server) Stop(ctx context.Context) error {
+	for _, h3 := range s.http3Srvs {
+		h3.Shutdown(ctx)
+	}
 	for _, srv := range s.servers {
 		if err := srv.Shutdown(ctx); err != nil {
 			return err
 		}
 	}
 	return nil
+}
+
+func (s *Server) addAltSvcHeader(handler http.Handler, listen *config.Listen) http.Handler {
+	if listen.HTTP3 == nil || listen.HTTP3.Enabled == nil || !*listen.HTTP3.Enabled {
+		return handler
+	}
+	_, port, _ := net.SplitHostPort(listen.Addr)
+	if port == "" {
+		port = "443"
+	}
+	altSvc := fmt.Sprintf(`h3=":%s"; ma=86400`, port)
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Alt-Svc", altSvc)
+		handler.ServeHTTP(w, r)
+	})
 }

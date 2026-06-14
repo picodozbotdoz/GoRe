@@ -15,9 +15,10 @@ type Config struct {
 }
 
 type Listen struct {
-	Addr string `yaml:"addr"`
-	TLS  *TLS   `yaml:"tls,omitempty"`
+	Addr  string `yaml:"addr"`
+	TLS   *TLS   `yaml:"tls,omitempty"`
 	HTTP2 *HTTP2 `yaml:"http2,omitempty"`
+	HTTP3 *HTTP3 `yaml:"http3,omitempty"`
 }
 
 type TLS struct {
@@ -43,6 +44,26 @@ func (h *HTTP2) GetMaxFrameSize() int {
 		return 1048576
 	}
 	return h.MaxFrameSize
+}
+
+type HTTP3 struct {
+	Enabled    *bool `yaml:"enabled,omitempty"`
+	MaxStreams  int   `yaml:"max_streams,omitempty"`
+	IdleTimeout int   `yaml:"idle_timeout,omitempty"`
+}
+
+func (h *HTTP3) GetMaxStreams() int {
+	if h == nil || h.MaxStreams == 0 {
+		return 100
+	}
+	return h.MaxStreams
+}
+
+func (h *HTTP3) GetIdleTimeout() int {
+	if h == nil || h.IdleTimeout == 0 {
+		return 30
+	}
+	return h.IdleTimeout
 }
 
 type HTTPConfig struct {
