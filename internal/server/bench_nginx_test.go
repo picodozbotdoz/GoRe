@@ -85,9 +85,19 @@ func nginxSkipH3(b *testing.B) bool {
 	return false
 }
 
+func skipIfNoNginx(b *testing.B, addr string) {
+	b.Helper()
+	conn, err := net.DialTimeout("tcp", addr, 500*time.Millisecond)
+	if err != nil {
+		b.Skipf("nginx not available at %s: %v", addr, err)
+	}
+	conn.Close()
+}
+
 // --- Nginx HTTP/1.1 ---
 
 func BenchmarkNginxH1Small(b *testing.B) {
+	skipIfNoNginx(b, nginxH1)
 	client := nginxH1Client()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -101,6 +111,7 @@ func BenchmarkNginxH1Small(b *testing.B) {
 }
 
 func BenchmarkNginxH1Parallel(b *testing.B) {
+	skipIfNoNginx(b, nginxH1)
 	client := nginxH1Client()
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
@@ -119,6 +130,7 @@ func BenchmarkNginxH1Parallel(b *testing.B) {
 // --- Nginx HTTP/2 (h2c) ---
 
 func BenchmarkNginxH2CSmall(b *testing.B) {
+	skipIfNoNginx(b, nginxH2C)
 	client := nginxH2CClient()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -132,6 +144,7 @@ func BenchmarkNginxH2CSmall(b *testing.B) {
 }
 
 func BenchmarkNginxH2CParallel(b *testing.B) {
+	skipIfNoNginx(b, nginxH2C)
 	client := nginxH2CClient()
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
@@ -150,6 +163,7 @@ func BenchmarkNginxH2CParallel(b *testing.B) {
 // --- Nginx HTTP/2 TLS ---
 
 func BenchmarkNginxH2TLSSmall(b *testing.B) {
+	skipIfNoNginx(b, nginxH2TL)
 	client := nginxH2TLSClient()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -163,6 +177,7 @@ func BenchmarkNginxH2TLSSmall(b *testing.B) {
 }
 
 func BenchmarkNginxH2TLSParallel(b *testing.B) {
+	skipIfNoNginx(b, nginxH2TL)
 	client := nginxH2TLSClient()
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {

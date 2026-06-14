@@ -91,17 +91,18 @@ func benchH3(b *testing.B, handler http.Handler) (addr string, certPath string, 
 	b.Helper()
 	dir := b.TempDir()
 	certPath, keyPath := benchCert(dir)
-	ln, _ := net.Listen("tcp", "127.0.0.1:0")
-	addr = ln.Addr().String()
-	ln.Close()
 	cert, _ := tls.LoadX509KeyPair(certPath, keyPath)
 	tlsCfg := &tls.Config{
 		Certificates: []tls.Certificate{cert},
 		NextProtos:   []string{"h3"},
 	}
-	h3Srv := &http3.Server{Addr: addr, TLSConfig: tlsCfg, Handler: handler}
-	udpAddr, _ := net.ResolveUDPAddr("udp", addr)
-	udpLn, _ := net.ListenUDP("udp", udpAddr)
+	h3Srv := &http3.Server{TLSConfig: tlsCfg, Handler: handler}
+	udpLn, err := net.ListenUDP("udp", &net.UDPAddr{IP: net.IPv4(127, 0, 0, 1), Port: 0})
+	if err != nil {
+		b.Skipf("UDP listen failed: %v", err)
+		return
+	}
+	addr = udpLn.LocalAddr().String()
 	go h3Srv.Serve(udpLn)
 	return addr, certPath, func() { h3Srv.Shutdown(context.Background()) }
 }
