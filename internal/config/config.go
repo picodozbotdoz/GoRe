@@ -191,12 +191,25 @@ type ModulesConfig struct {
 	Status            *StatusConfig    `yaml:"status,omitempty"`
 	RealIP            *RealIPConfig    `yaml:"real_ip,omitempty"`
 	BasicAuth         *BasicAuthConfig `yaml:"basic_auth,omitempty"`
+	Map               []MapConfig      `yaml:"map,omitempty"`
 }
 
 type BrotliConfig struct {
 	Enabled bool     `yaml:"enabled"`
 	Level   int      `yaml:"level,omitempty"`
 	Types   []string `yaml:"types,omitempty"`
+}
+
+type MapConfig struct {
+	Source  string      `yaml:"source"`
+	Target  string      `yaml:"target"`
+	Rules   []MapRule   `yaml:"rules"`
+	Default string      `yaml:"default,omitempty"`
+}
+
+type MapRule struct {
+	Pattern string `yaml:"pattern"`
+	Value   string `yaml:"value"`
 }
 
 type BasicAuthConfig struct {

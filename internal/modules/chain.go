@@ -12,6 +12,7 @@ import (
 	"github.com/user/gore/internal/modules/gzip"
 	"github.com/user/gore/internal/modules/headers"
 	"github.com/user/gore/internal/modules/limitconn"
+	"github.com/user/gore/internal/modules/mapmodule"
 	"github.com/user/gore/internal/modules/ratelimit"
 	"github.com/user/gore/internal/modules/realip"
 )
@@ -61,6 +62,10 @@ func BuildChain(cfg *config.ModulesConfig, next http.Handler) http.Handler {
 
 	if cfg.RealIP != nil {
 		handler = realip.New(cfg.RealIP.From)(handler)
+	}
+
+	if len(cfg.Map) > 0 {
+		handler = mapmodule.New(cfg.Map)(handler)
 	}
 
 	if cfg.BasicAuth != nil && len(cfg.BasicAuth.Users) > 0 {

@@ -76,7 +76,7 @@ Implementation status of all features, compared against nginx. Last updated: 202
 | 44 | Gunzip (decompress) | `gunzip` | ❌ | Small | Decompress upstream for old clients |
 | 45 | WebDAV | `dav_methods` | ❌ | Large | PUT, DELETE, MKCOL, COPY, MOVE |
 | 46 | GeoIP | `geoip` | ❌ | Medium | IP-to-country lookup |
-| 47 | Map directive | `map` | ❌ | Medium | Variable mapping based on conditions |
+| 47 | Map directive | `map` | ✅ | — | Variable mapping based on conditions |
 | 48 | Split clients | `split_clients` | ❌ | Small | A/B testing by IP/header hash |
 | 49 | Traffic mirroring | `mirror` | ❌ | Medium | Clone requests to shadow backend |
 | 50 | Real IP extraction | `real_ip` | ✅ | — | Parse X-Forwarded-For for client IP |
@@ -114,10 +114,10 @@ Implementation status of all features, compared against nginx. Last updated: 202
 | TLS | 3 | 1 | 0 | 2 | 0 |
 | Rewrite/Routing | 3 | 2 | 0 | 1 | 0 |
 | Advanced | 13 | 0 | 0 | 9 | 4 |
-| **Total** | **59** | **40** | **0** | **15** | **4** |
+| **Total** | **59** | **41** | **0** | **14** | **4** |
 
-**Completion: 68% (40/59 features)**
-**Remaining: 15 features to implement, 4 out of scope**
+**Completion: 69% (41/59 features)**
+**Remaining: 14 features to implement, 4 out of scope**
 
 ---
 
@@ -164,6 +164,6 @@ Implementation status of all features, compared against nginx. Last updated: 202
 | 29 | Active health checks | ✅ Done | Automatic backend failover |
 | 40 | Content replacement | ✅ Done | Response body rewriting |
 | 43 | Brotli compression | ✅ Done | Better compression than gzip |
-| 47 | Map directive | ❌ Next | Variable-based config flexibility |
-| 48 | Split clients | ❌ | A/B testing |
+| 47 | Map directive | ✅ Done | Variable-based config flexibility |
+| 48 | Split clients | ❌ Next | A/B testing |
 | 49 | Traffic mirroring | ❌ | Safe deployment testing |
