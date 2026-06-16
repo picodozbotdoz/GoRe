@@ -21,10 +21,11 @@ type Upstream struct {
 }
 
 type TimeoutConfig struct {
-	Connect int // seconds
-	Read    int // seconds
-	Send    int // seconds
-	Idle    int // seconds
+	Connect   int // seconds
+	Read      int // seconds
+	Send      int // seconds
+	Idle      int // seconds
+	Keepalive int // max idle connections per upstream host
 }
 
 func NewUpstream(name string, servers []*Server, strategy string, timeouts *TimeoutConfig, setHeaders map[string]string) *Upstream {
@@ -69,9 +70,13 @@ func (u *Upstream) director(req *http.Request) {
 }
 
 func (u *Upstream) transport(tc *TimeoutConfig) *http.Transport {
+	keepalivePerHost := tc.Keepalive
+	if keepalivePerHost <= 0 {
+		keepalivePerHost = 10
+	}
 	return &http.Transport{
-		MaxIdleConns:        100,
-		MaxIdleConnsPerHost: 10,
+		MaxIdleConns:        keepalivePerHost * 10,
+		MaxIdleConnsPerHost: keepalivePerHost,
 		IdleConnTimeout:     time.Duration(tc.Idle) * time.Second,
 		DialContext: (&net.Dialer{
 			Timeout:   time.Duration(tc.Connect) * time.Second,

@@ -53,10 +53,11 @@ func (s *Server) initUpstreams() {
 			servers[i] = &proxy.Server{Addr: srv.Addr, Weight: srv.Weight}
 		}
 		s.upstreams[name] = proxy.NewUpstream(name, servers, upstreamCfg.Strategy, &proxy.TimeoutConfig{
-			Connect: upstreamCfg.GetConnectTimeout(),
-			Read:    upstreamCfg.GetReadTimeout(),
-			Send:    upstreamCfg.GetSendTimeout(),
-			Idle:    upstreamCfg.GetIdleTimeout(),
+			Connect:   upstreamCfg.GetConnectTimeout(),
+			Read:      upstreamCfg.GetReadTimeout(),
+			Send:      upstreamCfg.GetSendTimeout(),
+			Idle:      upstreamCfg.GetIdleTimeout(),
+			Keepalive: upstreamCfg.Keepalive,
 		}, upstreamCfg.SetHeaders)
 	}
 }

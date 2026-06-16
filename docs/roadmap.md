@@ -52,7 +52,7 @@ Implementation status of all features, compared against nginx. Last updated: 202
 | 27 | Proxy buffering | `proxy_buffering`, `proxy_buffer_size` | ❌ | Small | Buffer upstream response before sending to client |
 | 28 | Proxy retry | `proxy_next_upstream` | ❌ | Medium | Retry on next upstream on failure |
 | 29 | Active health checks | `health_check` | ❌ | Large | Periodic backend health probing |
-| 30 | Upstream keepalive | `keepalive` in upstream | ❌ | Small | Configurable connection pool to backends |
+| 30 | Upstream keepalive | `keepalive` in upstream | ✅ | — | Configurable connection pool to backends |
 | 31 | Request body size limit | `client_max_body_size` | ✅ | — | Reject requests larger than limit |
 | 32 | Concurrent connection limit | `limit_conn` | ❌ | Medium | Per-IP connection count limit |
 | 33 | Request header manipulation | `proxy_set_header` | ✅ | — | Set/add/remove headers on proxied request |
@@ -104,7 +104,7 @@ Implementation status of all features, compared against nginx. Last updated: 202
 | Category | Total | Implemented | Partial | Planned | Out of Scope |
 |----------|-------|-------------|---------|---------|--------------|
 | Core HTTP | 7 | 7 | 0 | 0 | 0 |
-| Proxy | 9 | 5 | 0 | 4 | 0 |
+| Proxy | 9 | 6 | 0 | 3 | 0 |
 | Static | 5 | 3 | 0 | 2 | 0 |
 | Security | 5 | 1 | 0 | 4 | 0 |
 | Compression | 4 | 1 | 0 | 3 | 0 |
@@ -114,10 +114,10 @@ Implementation status of all features, compared against nginx. Last updated: 202
 | TLS | 3 | 1 | 0 | 2 | 0 |
 | Rewrite/Routing | 3 | 1 | 0 | 2 | 0 |
 | Advanced | 13 | 0 | 0 | 9 | 4 |
-| **Total** | **59** | **26** | **0** | **29** | **4** |
+| **Total** | **59** | **27** | **0** | **28** | **4** |
 
-**Completion: 44% (26/59 features)**
-**Remaining: 29 features to implement, 4 out of scope**
+**Completion: 46% (27/59 features)**
+**Remaining: 28 features to implement, 4 out of scope**
 
 ---
 
@@ -140,8 +140,8 @@ Implementation status of all features, compared against nginx. Last updated: 202
 |---|---------|--------|-----|
 | 23 | URL rewrite rules | ✅ Done | Complex routing requires regex rewrites |
 | 25 | WebSocket upgrade | ✅ Done | Modern apps need real-time communication |
-| 30 | Upstream keepalive | ❌ Next | Connection pooling reduces latency |
-| 32 | Concurrent connection limit | ❌ | DDoS protection beyond rate limiting |
+| 30 | Upstream keepalive | ✅ Done | Connection pooling reduces latency |
+| 32 | Concurrent connection limit | ❌ Next | DDoS protection beyond rate limiting |
 | 34 | ETag generation | ❌ | Browser caching for static files |
 | 35 | Cache-Control headers | ❌ | CDN and browser cache control |
 | 50 | Real IP extraction | ❌ | Accurate client IP behind load balancers |
