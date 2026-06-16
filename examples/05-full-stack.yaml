@@ -1,0 +1,51 @@
+listen:
+  - addr: ":80"
+  - addr: ":443"
+    tls:
+      cert: /etc/ssl/certs/server.pem
+      key: /etc/ssl/private/server.key
+    http2:
+      enabled: true
+    http3:
+      enabled: true
+  - addr: ":8080"
+
+upstreams:
+  app:
+    strategy: round-robin
+    servers:
+      - addr: 127.0.0.1:3000
+      - addr: 127.0.0.1:3001
+
+modules:
+  gzip:
+    enabled: true
+  headers:
+    add:
+      X-Frame-Options: DENY
+  rate_limit:
+    zone: api
+    rate: "200/s"
+    burst: 400
+  access:
+    rules:
+      - allow: 192.168.0.0/16
+      - deny: all
+
+http:
+  server:
+    - locations:
+        - path: /api/
+          proxy:
+            upstream: app
+        - path: /static/
+          root: /var/www/static
+          autoindex: true
+        - path: /health
+          return: "200 'OK'"
+        - path: /old-page
+          return: "301 /new-page"
+        - path: /forbidden
+          return: "403"
+        - path: /
+          root: /var/www/html

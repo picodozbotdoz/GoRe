@@ -1,0 +1,18 @@
+listen:
+  - addr: ":8080"
+
+upstreams:
+  backend:
+    strategy: round-robin
+    servers:
+      - addr: 127.0.0.1:3000
+      - addr: 127.0.0.1:3001
+
+http:
+  server:
+    - locations:
+        - path: /api/
+          proxy:
+            upstream: backend
+        - path: /
+          root: /var/www/static
