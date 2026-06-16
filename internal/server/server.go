@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"regexp"
 	"strconv"
 	"strings"
 	"sync"
@@ -92,6 +93,19 @@ func (s *Server) buildLocationHandler(loc config.Location) http.Handler {
 				r.URL.Path = "/"
 			}
 			rootHandler.ServeHTTP(w, r)
+		})
+	} else if loc.Rewrite != nil {
+		pat := regexp.MustCompile(loc.Rewrite.Pattern)
+		repl := loc.Rewrite.Replacement
+		code := loc.Rewrite.Code
+		handler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			newPath := pat.ReplaceAllString(r.URL.Path, repl)
+			if code >= 300 && code < 400 {
+				http.Redirect(w, r, newPath, code)
+				return
+			}
+			r.URL.Path = newPath
+			http.NotFound(w, r)
 		})
 	} else if loc.Return != "" {
 		returnSpec := loc.Return

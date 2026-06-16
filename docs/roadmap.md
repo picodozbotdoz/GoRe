@@ -45,7 +45,7 @@ Implementation status of all features, compared against nginx. Last updated: 202
 |---|---------|-----------------|--------|--------|-------------|
 | 21 | Access logging | `access_log` | ✅ | — | Log request method, path, status, latency, client IP |
 | 22 | Error logging levels | `error_log` | ✅ | — | Replace `log.Printf` with leveled logger |
-| 23 | URL rewrite rules | `rewrite` | ❌ | Medium | Regex-based URL rewriting with flags (permanent/temporary) |
+| 23 | URL rewrite rules | `rewrite` | ✅ | — | Regex-based URL rewriting with flags (permanent/temporary) |
 | 24 | `try_files` | `try_files` | ❌ | Medium | Fallback chain: `$uri $uri/ =404` |
 | 25 | WebSocket upgrade | `proxy_pass` + Upgrade | ❌ | Medium | Handle `Upgrade: websocket` header, bidirectional streaming |
 | 26 | Proxy timeouts | `proxy_connect_timeout`, `proxy_read_timeout` | ✅ | — | Per-location timeout configuration |
@@ -112,12 +112,12 @@ Implementation status of all features, compared against nginx. Last updated: 202
 | Limits | 3 | 2 | 0 | 1 | 0 |
 | Logging | 4 | 2 | 0 | 2 | 0 |
 | TLS | 3 | 1 | 0 | 2 | 0 |
-| Rewrite/Routing | 3 | 0 | 0 | 3 | 0 |
+| Rewrite/Routing | 3 | 1 | 0 | 2 | 0 |
 | Advanced | 13 | 0 | 0 | 9 | 4 |
-| **Total** | **59** | **24** | **0** | **31** | **4** |
+| **Total** | **59** | **25** | **0** | **30** | **4** |
 
-**Completion: 41% (24/59 features)**
-**Remaining: 31 features to implement, 4 out of scope**
+**Completion: 42% (25/59 features)**
+**Remaining: 30 features to implement, 4 out of scope**
 
 ---
 
@@ -136,10 +136,10 @@ Implementation status of all features, compared against nginx. Last updated: 202
 
 ### Phase 2 — Core Completeness
 
-| # | Feature | Why |
-|---|---------|-----|
-| 23 | URL rewrite rules | Complex routing requires regex rewrites |
-| 25 | WebSocket upgrade | Modern apps need real-time communication |
+| # | Feature | Status | Why |
+|---|---------|--------|-----|
+| 23 | URL rewrite rules | ✅ Done | Complex routing requires regex rewrites |
+| 25 | WebSocket upgrade | ❌ Next | Modern apps need real-time communication |
 | 30 | Upstream keepalive | Connection pooling reduces latency |
 | 32 | Concurrent connection limit | DDoS protection beyond rate limiting |
 | 34 | ETag generation | Browser caching for static files |
