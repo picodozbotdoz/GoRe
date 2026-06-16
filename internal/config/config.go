@@ -24,8 +24,10 @@ type Listen struct {
 }
 
 type TLS struct {
-	Cert string `yaml:"cert"`
-	Key  string `yaml:"key"`
+	Cert       string   `yaml:"cert"`
+	Key        string   `yaml:"key"`
+	Ciphers    []string `yaml:"ciphers,omitempty"`
+	MinVersion string   `yaml:"min_version,omitempty"`
 }
 
 type HTTP2 struct {

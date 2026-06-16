@@ -60,7 +60,7 @@ Implementation status of all features, compared against nginx. Last updated: 202
 | 35 | Cache-Control headers | `expires` | ✅ | — | Configurable cache headers per location |
 | 36 | HTTP Basic Auth | `auth_basic` | ✅ | — | Username/password authentication |
 | 37 | Auth subrequest | `auth_request` | ✅ | — | Delegate auth to external service |
-| 38 | TLS cipher config | `ssl_ciphers` | ❌ | Small | Configurable cipher suites |
+| 38 | TLS cipher config | `ssl_ciphers` | ✅ | — | Configurable cipher suites |
 | 39 | Stub status endpoint | `stub_status` | ✅ | — | `/nginx_status` equivalent for monitoring |
 
 ---
@@ -114,10 +114,10 @@ Implementation status of all features, compared against nginx. Last updated: 202
 | TLS | 3 | 1 | 0 | 2 | 0 |
 | Rewrite/Routing | 3 | 2 | 0 | 1 | 0 |
 | Advanced | 13 | 0 | 0 | 9 | 4 |
-| **Total** | **59** | **36** | **0** | **19** | **4** |
+| **Total** | **59** | **37** | **0** | **18** | **4** |
 
-**Completion: 61% (36/59 features)**
-**Remaining: 19 features to implement, 4 out of scope**
+**Completion: 63% (37/59 features)**
+**Remaining: 18 features to implement, 4 out of scope**
 
 ---
 
@@ -155,7 +155,7 @@ Implementation status of all features, compared against nginx. Last updated: 202
 | 27 | Proxy buffering | ✅ Done | Control memory usage for large responses |
 | 28 | Proxy retry | ✅ Done | Improve availability with automatic failover |
 | 37 | Auth subrequest | ✅ Done | External auth service delegation |
-| 38 | TLS cipher config | ❌ Next | Security hardening |
+| 38 | TLS cipher config | ✅ Done | Security hardening |
 
 ### Phase 4 — Advanced
 

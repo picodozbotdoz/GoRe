@@ -231,6 +231,34 @@ func (s *Server) Start() error {
 				Certificates: []tls.Certificate{cert},
 				NextProtos:   []string{"h2", "http/1.1"},
 			}
+			if len(listen.TLS.Ciphers) > 0 {
+				supported := tls.CipherSuites()
+				nameToID := make(map[string]uint16, len(supported))
+				for _, cs := range supported {
+					nameToID[cs.Name] = cs.ID
+				}
+				var ciphers []uint16
+				for _, name := range listen.TLS.Ciphers {
+					if id, ok := nameToID[name]; ok {
+						ciphers = append(ciphers, id)
+					}
+				}
+				if len(ciphers) > 0 {
+					tlsConfig.CipherSuites = ciphers
+				}
+			}
+			if listen.TLS.MinVersion != "" {
+				switch listen.TLS.MinVersion {
+				case "1.0":
+					tlsConfig.MinVersion = tls.VersionTLS10
+				case "1.1":
+					tlsConfig.MinVersion = tls.VersionTLS11
+				case "1.2":
+					tlsConfig.MinVersion = tls.VersionTLS12
+				case "1.3":
+					tlsConfig.MinVersion = tls.VersionTLS13
+				}
+			}
 			srv.TLSConfig = tlsConfig
 
 			if err := http2.ConfigureServer(srv, h2cfg); err != nil {
