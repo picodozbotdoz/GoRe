@@ -10,6 +10,14 @@ import (
 	"time"
 )
 
+var reqStartFn func()
+var reqDoneFn func()
+
+func SetRequestTracker(startFn, doneFn func()) {
+	reqStartFn = startFn
+	reqDoneFn = doneFn
+}
+
 const defaultAccessFormat = `$remote_addr - [$time_local] "$request" $status $body_bytes_sent "$http_referer" "$http_user_agent"`
 
 type accessLogger struct {
@@ -123,9 +131,16 @@ func AccessMiddleware(enabled bool, output, format string) func(http.Handler) ht
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			start := time.Now()
+			if reqStartFn != nil {
+				reqStartFn()
+			}
 
 			rw := &responseWriter{ResponseWriter: w, status: 200}
 			next.ServeHTTP(rw, r)
+
+			if reqDoneFn != nil {
+				reqDoneFn()
+			}
 
 			duration := time.Since(start).Seconds()
 

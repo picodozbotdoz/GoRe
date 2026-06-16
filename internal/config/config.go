@@ -135,13 +135,26 @@ type UpstreamServer struct {
 }
 
 type ModulesConfig struct {
-	Gzip             *GzipConfig      `yaml:"gzip,omitempty"`
-	Access           *AccessConfig    `yaml:"access,omitempty"`
-	RateLimit        *RateLimitConfig `yaml:"rate_limit,omitempty"`
-	Headers          *HeadersConfig   `yaml:"headers,omitempty"`
-	AccessLog        *AccessLogConfig `yaml:"access_log,omitempty"`
-	ErrorLog         *ErrorLogConfig  `yaml:"error_log,omitempty"`
+	Gzip              *GzipConfig      `yaml:"gzip,omitempty"`
+	Access            *AccessConfig    `yaml:"access,omitempty"`
+	RateLimit         *RateLimitConfig `yaml:"rate_limit,omitempty"`
+	Headers           *HeadersConfig   `yaml:"headers,omitempty"`
+	AccessLog         *AccessLogConfig `yaml:"access_log,omitempty"`
+	ErrorLog          *ErrorLogConfig  `yaml:"error_log,omitempty"`
 	ClientMaxBodySize string           `yaml:"client_max_body_size,omitempty"`
+	Status            *StatusConfig    `yaml:"status,omitempty"`
+}
+
+type StatusConfig struct {
+	Enabled bool   `yaml:"enabled"`
+	Path    string `yaml:"path,omitempty"`
+}
+
+func (s *StatusConfig) GetPath() string {
+	if s == nil || s.Path == "" {
+		return "/status"
+	}
+	return s.Path
 }
 
 func ParseSize(s string) int64 {

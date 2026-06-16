@@ -61,7 +61,7 @@ Implementation status of all features, compared against nginx. Last updated: 202
 | 36 | HTTP Basic Auth | `auth_basic` | ❌ | Medium | Username/password authentication |
 | 37 | Auth subrequest | `auth_request` | ❌ | Large | Delegate auth to external service |
 | 38 | TLS cipher config | `ssl_ciphers` | ❌ | Small | Configurable cipher suites |
-| 39 | Stub status endpoint | `stub_status` | ❌ | Small | `/nginx_status` equivalent for monitoring |
+| 39 | Stub status endpoint | `stub_status` | ✅ | — | `/nginx_status` equivalent for monitoring |
 
 ---
 
@@ -114,10 +114,10 @@ Implementation status of all features, compared against nginx. Last updated: 202
 | TLS | 3 | 1 | 0 | 2 | 0 |
 | Rewrite/Routing | 3 | 0 | 0 | 3 | 0 |
 | Advanced | 13 | 0 | 0 | 9 | 4 |
-| **Total** | **59** | **23** | **0** | **32** | **4** |
+| **Total** | **59** | **24** | **0** | **31** | **4** |
 
-**Completion: 39% (23/59 features)**
-**Remaining: 32 features to implement, 4 out of scope**
+**Completion: 41% (24/59 features)**
+**Remaining: 31 features to implement, 4 out of scope**
 
 ---
 
@@ -132,7 +132,7 @@ Implementation status of all features, compared against nginx. Last updated: 202
 | 26 | Proxy timeouts | ✅ Done | Without this, slow backends hang the proxy |
 | 31 | Request body size limit | ✅ Done | Prevents abuse (large POST uploads) |
 | 33 | Request header manipulation | ✅ Done | Needed for custom auth headers, tracing |
-| 39 | Stub status endpoint | ❌ Next | Needed for monitoring (Prometheus scrape) |
+| 39 | Stub status endpoint | ✅ Done | Needed for monitoring (Prometheus scrape) |
 
 ### Phase 2 — Core Completeness
 

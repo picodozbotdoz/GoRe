@@ -19,6 +19,7 @@ import (
 	gorelog "github.com/user/gore/internal/log"
 	"github.com/user/gore/internal/modules"
 	"github.com/user/gore/internal/modules/static"
+	"github.com/user/gore/internal/modules/status"
 	"github.com/user/gore/internal/proxy"
 	"github.com/user/gore/internal/router"
 )
@@ -64,6 +65,11 @@ func (s *Server) initRoutes() {
 		for _, loc := range httpCfg.Locations {
 			s.router.AddRoute(loc.Path, s.buildLocationHandler(loc))
 		}
+	}
+
+	if s.cfg.Modules.Status != nil && s.cfg.Modules.Status.Enabled {
+		s.router.AddRoute(s.cfg.Modules.Status.GetPath(), status.NewHandler(s.cfg.Modules.Status.GetPath()))
+		gorelog.SetRequestTracker(status.Get().ReqStart, status.Get().ReqDone)
 	}
 }
 
