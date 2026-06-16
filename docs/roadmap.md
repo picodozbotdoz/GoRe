@@ -43,8 +43,8 @@ Implementation status of all features, compared against nginx. Last updated: 202
 
 | # | Feature | nginx Equivalent | Status | Effort | Description |
 |---|---------|-----------------|--------|--------|-------------|
-| 21 | Access logging | `access_log` | ❌ | Small | Log request method, path, status, latency, client IP |
-| 22 | Error logging levels | `error_log` | 🔧 | Small | Replace `log.Printf` with leveled logger |
+| 21 | Access logging | `access_log` | ✅ | — | Log request method, path, status, latency, client IP |
+| 22 | Error logging levels | `error_log` | ✅ | — | Replace `log.Printf` with leveled logger |
 | 23 | URL rewrite rules | `rewrite` | ❌ | Medium | Regex-based URL rewriting with flags (permanent/temporary) |
 | 24 | `try_files` | `try_files` | ❌ | Medium | Fallback chain: `$uri $uri/ =404` |
 | 25 | WebSocket upgrade | `proxy_pass` + Upgrade | ❌ | Medium | Handle `Upgrade: websocket` header, bidirectional streaming |
@@ -110,29 +110,29 @@ Implementation status of all features, compared against nginx. Last updated: 202
 | Compression | 4 | 1 | 0 | 3 | 0 |
 | Headers | 3 | 2 | 0 | 1 | 0 |
 | Limits | 3 | 1 | 0 | 2 | 0 |
-| Logging | 4 | 0 | 1 | 3 | 0 |
+| Logging | 4 | 2 | 0 | 2 | 0 |
 | TLS | 3 | 1 | 0 | 2 | 0 |
 | Rewrite/Routing | 3 | 0 | 0 | 3 | 0 |
 | Advanced | 13 | 0 | 0 | 9 | 4 |
-| **Total** | **59** | **18** | **1** | **37** | **4** |
+| **Total** | **59** | **20** | **0** | **35** | **4** |
 
-**Completion: 31% (18/59 features)**
-**Remaining: 37 features to implement, 4 out of scope**
+**Completion: 34% (20/59 features)**
+**Remaining: 35 features to implement, 4 out of scope**
 
 ---
 
 ## Priority Roadmap
 
-### Phase 1 — Production Essentials (next)
+### Phase 1 — Production Essentials
 
-| # | Feature | Why |
-|---|---------|-----|
-| 21 | Access logging | Every production server needs request logs |
-| 26 | Proxy timeouts | Without this, slow backends hang the proxy |
-| 31 | Request body size limit | Prevents abuse (large POST uploads) |
-| 33 | Request header manipulation | Needed for custom auth headers, tracing |
-| 39 | Stub status endpoint | Needed for monitoring (Prometheus scrape) |
-| 22 | Error logging levels | Debug/Info/Warn/Error separation |
+| # | Feature | Status | Why |
+|---|---------|--------|-----|
+| 21 | Access logging | ✅ Done | Every production server needs request logs |
+| 22 | Error logging levels | ✅ Done | Debug/Info/Warn/Error separation |
+| 26 | Proxy timeouts | ❌ Next | Without this, slow backends hang the proxy |
+| 31 | Request body size limit | ❌ | Prevents abuse (large POST uploads) |
+| 33 | Request header manipulation | ❌ | Needed for custom auth headers, tracing |
+| 39 | Stub status endpoint | ❌ | Needed for monitoring (Prometheus scrape) |
 
 ### Phase 2 — Core Completeness
 
