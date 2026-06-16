@@ -152,6 +152,11 @@ type ModulesConfig struct {
 	ErrorLog          *ErrorLogConfig  `yaml:"error_log,omitempty"`
 	ClientMaxBodySize string           `yaml:"client_max_body_size,omitempty"`
 	Status            *StatusConfig    `yaml:"status,omitempty"`
+	RealIP            *RealIPConfig    `yaml:"real_ip,omitempty"`
+}
+
+type RealIPConfig struct {
+	From string `yaml:"from,omitempty"`
 }
 
 type LimitConnConfig struct {

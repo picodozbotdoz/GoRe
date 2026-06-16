@@ -11,6 +11,7 @@ import (
 	"github.com/user/gore/internal/modules/headers"
 	"github.com/user/gore/internal/modules/limitconn"
 	"github.com/user/gore/internal/modules/ratelimit"
+	"github.com/user/gore/internal/modules/realip"
 )
 
 func BuildChain(cfg *config.ModulesConfig, next http.Handler) http.Handler {
@@ -50,6 +51,10 @@ func BuildChain(cfg *config.ModulesConfig, next http.Handler) http.Handler {
 
 	if cfg.LimitConn != nil && cfg.LimitConn.Connections > 0 {
 		handler = limitconn.New(cfg.LimitConn.Connections).ServeHTTP(handler)
+	}
+
+	if cfg.RealIP != nil {
+		handler = realip.New(cfg.RealIP.From)(handler)
 	}
 
 	handler = log.AccessMiddleware(

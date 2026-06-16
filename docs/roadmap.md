@@ -79,7 +79,7 @@ Implementation status of all features, compared against nginx. Last updated: 202
 | 47 | Map directive | `map` | ❌ | Medium | Variable mapping based on conditions |
 | 48 | Split clients | `split_clients` | ❌ | Small | A/B testing by IP/header hash |
 | 49 | Traffic mirroring | `mirror` | ❌ | Medium | Clone requests to shadow backend |
-| 50 | Real IP extraction | `real_ip` | ❌ | Small | Parse X-Forwarded-For for client IP |
+| 50 | Real IP extraction | `real_ip` | ✅ | — | Parse X-Forwarded-For for client IP |
 | 51 | TCP/UDP stream proxy | `stream` | ❌ | Large | L4 proxy (no HTTP parsing) |
 | 52 | Mail proxy | `mail` | ❌ | Large | IMAP/POP3/SMTP proxy |
 
@@ -114,10 +114,10 @@ Implementation status of all features, compared against nginx. Last updated: 202
 | TLS | 3 | 1 | 0 | 2 | 0 |
 | Rewrite/Routing | 3 | 1 | 0 | 2 | 0 |
 | Advanced | 13 | 0 | 0 | 9 | 4 |
-| **Total** | **59** | **30** | **0** | **25** | **4** |
+| **Total** | **59** | **31** | **0** | **24** | **4** |
 
-**Completion: 51% (30/59 features)**
-**Remaining: 25 features to implement, 4 out of scope**
+**Completion: 53% (31/59 features)**
+**Remaining: 24 features to implement, 4 out of scope**
 
 ---
 
@@ -144,18 +144,18 @@ Implementation status of all features, compared against nginx. Last updated: 202
 | 32 | Concurrent connection limit | ✅ Done | DDoS protection beyond rate limiting |
 | 34 | ETag generation | ✅ Done | Browser caching for static files |
 | 35 | Cache-Control headers | ✅ Done | CDN and browser cache control |
-| 50 | Real IP extraction | ❌ Next | Accurate client IP behind load balancers |
+| 50 | Real IP extraction | ✅ Done | Accurate client IP behind load balancers |
 
 ### Phase 3 — Authentication & Security
 
-| # | Feature | Why |
-|---|---------|-----|
-| 36 | HTTP Basic Auth | Simple auth for admin panels |
-| 24 | try_files | Elegant fallback chain for SPAs |
-| 27 | Proxy buffering | Control memory usage for large responses |
-| 28 | Proxy retry | Improve availability with automatic failover |
-| 37 | Auth subrequest | External auth service delegation |
-| 38 | TLS cipher config | Security hardening |
+| # | Feature | Status | Why |
+|---|---------|--------|-----|
+| 36 | HTTP Basic Auth | ❌ Next | Simple auth for admin panels |
+| 24 | try_files | ❌ | Elegant fallback chain for SPAs |
+| 27 | Proxy buffering | ❌ | Control memory usage for large responses |
+| 28 | Proxy retry | ❌ | Improve availability with automatic failover |
+| 37 | Auth subrequest | ❌ | External auth service delegation |
+| 38 | TLS cipher config | ❌ | Security hardening |
 
 ### Phase 4 — Advanced
 
