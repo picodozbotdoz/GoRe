@@ -56,7 +56,7 @@ Implementation status of all features, compared against nginx. Last updated: 202
 | 31 | Request body size limit | `client_max_body_size` | ✅ | — | Reject requests larger than limit |
 | 32 | Concurrent connection limit | `limit_conn` | ✅ | — | Per-IP connection count limit |
 | 33 | Request header manipulation | `proxy_set_header` | ✅ | — | Set/add/remove headers on proxied request |
-| 34 | ETag generation | Automatic | ❌ | Small | Generate ETag for static files |
+| 34 | ETag generation | Automatic | ✅ | — | Generate ETag for static files |
 | 35 | Cache-Control headers | `expires` | ❌ | Small | Configurable cache headers per location |
 | 36 | HTTP Basic Auth | `auth_basic` | ❌ | Medium | Username/password authentication |
 | 37 | Auth subrequest | `auth_request` | ❌ | Large | Delegate auth to external service |
@@ -105,7 +105,7 @@ Implementation status of all features, compared against nginx. Last updated: 202
 |----------|-------|-------------|---------|---------|--------------|
 | Core HTTP | 7 | 7 | 0 | 0 | 0 |
 | Proxy | 9 | 6 | 0 | 3 | 0 |
-| Static | 5 | 3 | 0 | 2 | 0 |
+| Static | 5 | 4 | 0 | 1 | 0 |
 | Security | 5 | 1 | 0 | 4 | 0 |
 | Compression | 4 | 1 | 0 | 3 | 0 |
 | Headers | 3 | 2 | 0 | 1 | 0 |
@@ -114,10 +114,10 @@ Implementation status of all features, compared against nginx. Last updated: 202
 | TLS | 3 | 1 | 0 | 2 | 0 |
 | Rewrite/Routing | 3 | 1 | 0 | 2 | 0 |
 | Advanced | 13 | 0 | 0 | 9 | 4 |
-| **Total** | **59** | **28** | **0** | **27** | **4** |
+| **Total** | **59** | **29** | **0** | **26** | **4** |
 
-**Completion: 47% (28/59 features)**
-**Remaining: 27 features to implement, 4 out of scope**
+**Completion: 49% (29/59 features)**
+**Remaining: 26 features to implement, 4 out of scope**
 
 ---
 
@@ -142,8 +142,8 @@ Implementation status of all features, compared against nginx. Last updated: 202
 | 25 | WebSocket upgrade | ✅ Done | Modern apps need real-time communication |
 | 30 | Upstream keepalive | ✅ Done | Connection pooling reduces latency |
 | 32 | Concurrent connection limit | ✅ Done | DDoS protection beyond rate limiting |
-| 34 | ETag generation | ❌ Next | Browser caching for static files |
-| 35 | Cache-Control headers | ❌ | CDN and browser cache control |
+| 34 | ETag generation | ✅ Done | Browser caching for static files |
+| 35 | Cache-Control headers | ❌ Next | CDN and browser cache control |
 | 50 | Real IP extraction | ❌ | Accurate client IP behind load balancers |
 
 ### Phase 3 — Authentication & Security

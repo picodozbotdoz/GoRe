@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 )
 
@@ -23,7 +24,6 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		path = "/"
 	}
 
-	// If path is a directory, look for index.html
 	if strings.HasSuffix(path, "/") {
 		indexPath := filepath.Join(h.Root, path, "index.html")
 		if info, err := os.Stat(indexPath); err == nil && !info.IsDir() {
@@ -61,6 +61,12 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	h.serveFile(w, r, fullPath)
 }
 
+func generateETag(info os.FileInfo) string {
+	mtime := info.ModTime().UnixNano()
+	size := info.Size()
+	return fmt.Sprintf("W/\"%d-%d\"", size, mtime)
+}
+
 func (h *Handler) serveFile(w http.ResponseWriter, r *http.Request, filePath string) {
 	file, err := os.Open(filePath)
 	if err != nil {
@@ -75,7 +81,9 @@ func (h *Handler) serveFile(w http.ResponseWriter, r *http.Request, filePath str
 		return
 	}
 
-	w.Header().Set("Content-Length", fmt.Sprintf("%d", info.Size()))
+	etag := generateETag(info)
+	w.Header().Set("ETag", etag)
+	w.Header().Set("Content-Length", strconv.FormatInt(info.Size(), 10))
 	http.ServeContent(w, r, info.Name(), info.ModTime(), file)
 }
 
