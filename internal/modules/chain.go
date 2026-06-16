@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/user/gore/internal/config"
+	"github.com/user/gore/internal/log"
 	"github.com/user/gore/internal/modules/access"
 	"github.com/user/gore/internal/modules/gzip"
 	"github.com/user/gore/internal/modules/headers"
@@ -39,6 +40,12 @@ func BuildChain(cfg *config.ModulesConfig, next http.Handler) http.Handler {
 		}
 		handler = access.New(rules).ServeHTTP(handler)
 	}
+
+	handler = log.AccessMiddleware(
+		cfg.AccessLog != nil && cfg.AccessLog.Enabled,
+		cfg.AccessLog.GetOutput(),
+		cfg.AccessLog.GetFormat(),
+	)(handler)
 
 	return handler
 }

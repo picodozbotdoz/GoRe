@@ -104,6 +104,8 @@ type ModulesConfig struct {
 	Access    *AccessConfig    `yaml:"access,omitempty"`
 	RateLimit *RateLimitConfig `yaml:"rate_limit,omitempty"`
 	Headers   *HeadersConfig   `yaml:"headers,omitempty"`
+	AccessLog *AccessLogConfig `yaml:"access_log,omitempty"`
+	ErrorLog  *ErrorLogConfig  `yaml:"error_log,omitempty"`
 }
 
 type GzipConfig struct {
@@ -130,6 +132,45 @@ type RateLimitConfig struct {
 type HeadersConfig struct {
 	Add    map[string]string `yaml:"add,omitempty"`
 	Remove []string          `yaml:"remove,omitempty"`
+}
+
+type AccessLogConfig struct {
+	Enabled bool   `yaml:"enabled"`
+	Output  string `yaml:"output,omitempty"`
+	Format  string `yaml:"format,omitempty"`
+}
+
+func (c *AccessLogConfig) GetOutput() string {
+	if c == nil || c.Output == "" {
+		return "stdout"
+	}
+	return c.Output
+}
+
+func (c *AccessLogConfig) GetFormat() string {
+	if c == nil || c.Format == "" {
+		return ""
+	}
+	return c.Format
+}
+
+type ErrorLogConfig struct {
+	Level  string `yaml:"level,omitempty"`
+	Output string `yaml:"output,omitempty"`
+}
+
+func (c *ErrorLogConfig) GetLevel() string {
+	if c == nil || c.Level == "" {
+		return "info"
+	}
+	return c.Level
+}
+
+func (c *ErrorLogConfig) GetOutput() string {
+	if c == nil || c.Output == "" {
+		return "stderr"
+	}
+	return c.Output
 }
 
 func Load(path string) (*Config, error) {

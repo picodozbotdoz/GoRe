@@ -4,7 +4,6 @@ import (
 	"context"
 	"crypto/tls"
 	"fmt"
-	"log"
 	"net"
 	"net/http"
 	"strconv"
@@ -17,6 +16,7 @@ import (
 	"golang.org/x/net/http2/h2c"
 
 	"github.com/user/gore/internal/config"
+	gorelog "github.com/user/gore/internal/log"
 	"github.com/user/gore/internal/modules"
 	"github.com/user/gore/internal/modules/static"
 	"github.com/user/gore/internal/proxy"
@@ -164,10 +164,10 @@ func (s *Server) Start() error {
 			wg.Add(1)
 			go func(srv *http.Server, ln net.Listener, addr string) {
 				defer wg.Done()
-				log.Printf("listening on %s (HTTP/2 + TLS)", addr)
+				gorelog.Infof("listening on %s (HTTP/2 + TLS)", addr)
 				tlsLn := tls.NewListener(ln, srv.TLSConfig)
 				if err := srv.Serve(tlsLn); err != nil && err != http.ErrServerClosed {
-					log.Printf("server error: %v", err)
+					gorelog.Infof("server error: %v", err)
 				}
 			}(srv, ln, addr)
 
@@ -182,14 +182,14 @@ func (s *Server) Start() error {
 				udpAddr := ln.Addr().String()
 				udpLn, err := net.ListenPacket("udp", udpAddr)
 				if err != nil {
-					log.Printf("HTTP/3 UDP listen error on %s: %v (HTTP/3 disabled)", udpAddr, err)
+					gorelog.Infof("HTTP/3 UDP listen error on %s: %v (HTTP/3 disabled)", udpAddr, err)
 				} else {
 					wg.Add(1)
 					go func(h3 *http3.Server, pc net.PacketConn) {
 						defer wg.Done()
-						log.Printf("listening on %s (HTTP/3 QUIC)", pc.LocalAddr())
+						gorelog.Infof("listening on %s (HTTP/3 QUIC)", pc.LocalAddr())
 						if err := h3.Serve(pc); err != nil && err != http.ErrServerClosed {
-							log.Printf("HTTP/3 server error: %v", err)
+							gorelog.Infof("HTTP/3 server error: %v", err)
 						}
 					}(h3Srv, udpLn)
 				}
@@ -202,9 +202,9 @@ func (s *Server) Start() error {
 			wg.Add(1)
 			go func(srv *http.Server, ln net.Listener, addr string) {
 				defer wg.Done()
-				log.Printf("listening on %s (HTTP/2 cleartext + HTTP/1.1)", addr)
+				gorelog.Infof("listening on %s (HTTP/2 cleartext + HTTP/1.1)", addr)
 				if err := srv.Serve(ln); err != nil && err != http.ErrServerClosed {
-					log.Printf("server error: %v", err)
+					gorelog.Infof("server error: %v", err)
 				}
 			}(srv, ln, addr)
 		}

@@ -3,13 +3,13 @@ package main
 import (
 	"context"
 	"flag"
-	"log"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
 
 	"github.com/user/gore/internal/config"
+	gorelog "github.com/user/gore/internal/log"
 	"github.com/user/gore/internal/server"
 )
 
@@ -19,8 +19,14 @@ func main() {
 
 	cfg, err := config.Load(*configPath)
 	if err != nil {
-		log.Fatalf("failed to load config: %v", err)
+		gorelog.Errorf("failed to load config: %v", err)
+		os.Exit(1)
 	}
+
+	gorelog.Init(&gorelog.Config{
+		Level:  cfg.Modules.ErrorLog.GetLevel(),
+		Output: cfg.Modules.ErrorLog.GetOutput(),
+	})
 
 	srv := server.New(cfg)
 
@@ -29,13 +35,14 @@ func main() {
 
 	go func() {
 		<-quit
-		log.Println("shutting down...")
+		gorelog.Infof("shutting down...")
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
 		srv.Stop(ctx)
 	}()
 
 	if err := srv.Start(); err != nil {
-		log.Fatalf("server error: %v", err)
+		gorelog.Errorf("server error: %v", err)
+		os.Exit(1)
 	}
 }
