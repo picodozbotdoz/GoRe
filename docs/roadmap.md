@@ -50,7 +50,7 @@ Implementation status of all features, compared against nginx. Last updated: 202
 | 25 | WebSocket upgrade | `proxy_pass` + Upgrade | ✅ | — | Handle `Upgrade: websocket` header, bidirectional streaming |
 | 26 | Proxy timeouts | `proxy_connect_timeout`, `proxy_read_timeout` | ✅ | — | Per-location timeout configuration |
 | 27 | Proxy buffering | `proxy_buffering`, `proxy_buffer_size` | ✅ | — | Buffer upstream response before sending to client |
-| 28 | Proxy retry | `proxy_next_upstream` | ❌ | Medium | Retry on next upstream on failure |
+| 28 | Proxy retry | `proxy_next_upstream` | ✅ | — | Retry on next upstream on failure |
 | 29 | Active health checks | `health_check` | ❌ | Large | Periodic backend health probing |
 | 30 | Upstream keepalive | `keepalive` in upstream | ✅ | — | Configurable connection pool to backends |
 | 31 | Request body size limit | `client_max_body_size` | ✅ | — | Reject requests larger than limit |
@@ -104,7 +104,7 @@ Implementation status of all features, compared against nginx. Last updated: 202
 | Category | Total | Implemented | Partial | Planned | Out of Scope |
 |----------|-------|-------------|---------|---------|--------------|
 | Core HTTP | 7 | 7 | 0 | 0 | 0 |
-| Proxy | 9 | 7 | 0 | 2 | 0 |
+| Proxy | 9 | 8 | 0 | 1 | 0 |
 | Static | 5 | 5 | 0 | 0 | 0 |
 | Security | 5 | 2 | 0 | 3 | 0 |
 | Compression | 4 | 1 | 0 | 3 | 0 |
@@ -114,10 +114,10 @@ Implementation status of all features, compared against nginx. Last updated: 202
 | TLS | 3 | 1 | 0 | 2 | 0 |
 | Rewrite/Routing | 3 | 2 | 0 | 1 | 0 |
 | Advanced | 13 | 0 | 0 | 9 | 4 |
-| **Total** | **59** | **34** | **0** | **21** | **4** |
+| **Total** | **59** | **35** | **0** | **20** | **4** |
 
-**Completion: 58% (34/59 features)**
-**Remaining: 21 features to implement, 4 out of scope**
+**Completion: 59% (35/59 features)**
+**Remaining: 20 features to implement, 4 out of scope**
 
 ---
 
@@ -153,8 +153,8 @@ Implementation status of all features, compared against nginx. Last updated: 202
 | 36 | HTTP Basic Auth | ✅ Done | Simple auth for admin panels |
 | 24 | try_files | ✅ Done | Elegant fallback chain for SPAs |
 | 27 | Proxy buffering | ✅ Done | Control memory usage for large responses |
-| 28 | Proxy retry | ❌ Next | Improve availability with automatic failover |
-| 37 | Auth subrequest | ❌ | External auth service delegation |
+| 28 | Proxy retry | ✅ Done | Improve availability with automatic failover |
+| 37 | Auth subrequest | ❌ Next | External auth service delegation |
 | 38 | TLS cipher config | ❌ | Security hardening |
 
 ### Phase 4 — Advanced

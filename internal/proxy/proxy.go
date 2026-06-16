@@ -18,6 +18,7 @@ type Upstream struct {
 	Balancer   Balancer
 	Proxy      *httputil.ReverseProxy
 	SetHeaders map[string]string
+	MaxRetries int
 }
 
 type TimeoutConfig struct {
@@ -28,7 +29,7 @@ type TimeoutConfig struct {
 	Keepalive int // max idle connections per upstream host
 }
 
-func NewUpstream(name string, servers []*Server, strategy string, timeouts *TimeoutConfig, setHeaders map[string]string, buffered bool) *Upstream {
+func NewUpstream(name string, servers []*Server, strategy string, timeouts *TimeoutConfig, setHeaders map[string]string, buffered bool, maxRetries int) *Upstream {
 	var balancer Balancer
 	switch strategy {
 	case "least-conn":
@@ -41,7 +42,7 @@ func NewUpstream(name string, servers []*Server, strategy string, timeouts *Time
 		timeouts = &TimeoutConfig{Connect: 60, Read: 60, Send: 60, Idle: 90}
 	}
 
-	u := &Upstream{Name: name, Balancer: balancer, SetHeaders: setHeaders}
+	u := &Upstream{Name: name, Balancer: balancer, SetHeaders: setHeaders, MaxRetries: maxRetries}
 	u.Proxy = &httputil.ReverseProxy{
 		Director:     u.director,
 		Transport:    u.transport(timeouts),
@@ -103,7 +104,57 @@ func (u *Upstream) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		u.proxyWebSocket(w, r)
 		return
 	}
-	u.Proxy.ServeHTTP(w, r)
+
+	maxAttempts := u.MaxRetries + 1
+	var lastErr error
+
+	for attempt := 0; attempt < maxAttempts; attempt++ {
+		if attempt > 0 {
+			if r.Body != nil && r.GetBody != nil {
+				newBody, err := r.GetBody()
+				if err != nil {
+					break
+				}
+				r.Body = newBody
+			}
+		}
+
+		rec := &retryResponseWriter{ResponseWriter: w, statusCode: 200}
+		u.Proxy.ServeHTTP(rec, r)
+
+		if rec.statusCode >= 500 && rec.statusCode < 600 && attempt < u.MaxRetries {
+			lastErr = fmt.Errorf("upstream returned %d", rec.statusCode)
+			continue
+		}
+		return
+	}
+
+	if lastErr != nil {
+		http.Error(w, "Bad Gateway", http.StatusBadGateway)
+	}
+}
+
+type retryResponseWriter struct {
+	http.ResponseWriter
+	statusCode int
+	written    bool
+}
+
+func (rw *retryResponseWriter) WriteHeader(code int) {
+	rw.statusCode = code
+	rw.written = true
+	rw.ResponseWriter.WriteHeader(code)
+}
+
+func (rw *retryResponseWriter) Write(b []byte) (int, error) {
+	if !rw.written {
+		rw.written = true
+	}
+	return rw.ResponseWriter.Write(b)
+}
+
+func (rw *retryResponseWriter) Unwrap() http.ResponseWriter {
+	return rw.ResponseWriter
 }
 
 func isWebSocketUpgrade(r *http.Request) bool {

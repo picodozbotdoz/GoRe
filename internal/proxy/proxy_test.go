@@ -45,7 +45,7 @@ func TestUpstreamServeHTTP(t *testing.T) {
 	defer backend.Close()
 
 	servers := []*Server{{Addr: backend.Listener.Addr().String(), Weight: 1}}
-	upstream := NewUpstream("test", servers, "round-robin", nil, nil, true)
+	upstream := NewUpstream("test", servers, "round-robin", nil, nil, true, 0)
 
 	req := httptest.NewRequest("GET", "/", nil)
 	w := httptest.NewRecorder()

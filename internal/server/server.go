@@ -60,7 +60,7 @@ func (s *Server) initUpstreams() {
 			Send:      upstreamCfg.GetSendTimeout(),
 			Idle:      upstreamCfg.GetIdleTimeout(),
 			Keepalive: upstreamCfg.Keepalive,
-		}, upstreamCfg.SetHeaders, upstreamCfg.GetBuffering())
+		}, upstreamCfg.SetHeaders, upstreamCfg.GetBuffering(), upstreamCfg.GetRetries())
 	}
 }
 

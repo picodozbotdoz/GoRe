@@ -105,11 +105,19 @@ type Upstream struct {
 	Servers         []UpstreamServer  `yaml:"servers"`
 	SetHeaders      map[string]string `yaml:"set_headers,omitempty"`
 	Buffering       *bool             `yaml:"buffering,omitempty"`
+	Retries         int               `yaml:"retries,omitempty"`
 	Keepalive       int               `yaml:"keepalive,omitempty"`
 	ConnectTimeout  int               `yaml:"connect_timeout,omitempty"`
 	ReadTimeout     int               `yaml:"read_timeout,omitempty"`
 	SendTimeout     int               `yaml:"send_timeout,omitempty"`
 	IdleTimeout     int               `yaml:"idle_timeout,omitempty"`
+}
+
+func (u *Upstream) GetRetries() int {
+	if u == nil || u.Retries < 0 {
+		return 0
+	}
+	return u.Retries
 }
 
 func (u *Upstream) GetBuffering() bool {
