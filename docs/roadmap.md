@@ -51,7 +51,7 @@ Implementation status of all features, compared against nginx. Last updated: 202
 | 26 | Proxy timeouts | `proxy_connect_timeout`, `proxy_read_timeout` | ✅ | — | Per-location timeout configuration |
 | 27 | Proxy buffering | `proxy_buffering`, `proxy_buffer_size` | ✅ | — | Buffer upstream response before sending to client |
 | 28 | Proxy retry | `proxy_next_upstream` | ✅ | — | Retry on next upstream on failure |
-| 29 | Active health checks | `health_check` | ❌ | Large | Periodic backend health probing |
+| 29 | Active health checks | `health_check` | ✅ | — | Periodic backend health probing |
 | 30 | Upstream keepalive | `keepalive` in upstream | ✅ | — | Configurable connection pool to backends |
 | 31 | Request body size limit | `client_max_body_size` | ✅ | — | Reject requests larger than limit |
 | 32 | Concurrent connection limit | `limit_conn` | ✅ | — | Per-IP connection count limit |
@@ -114,10 +114,10 @@ Implementation status of all features, compared against nginx. Last updated: 202
 | TLS | 3 | 1 | 0 | 2 | 0 |
 | Rewrite/Routing | 3 | 2 | 0 | 1 | 0 |
 | Advanced | 13 | 0 | 0 | 9 | 4 |
-| **Total** | **59** | **37** | **0** | **18** | **4** |
+| **Total** | **59** | **38** | **0** | **17** | **4** |
 
-**Completion: 63% (37/59 features)**
-**Remaining: 18 features to implement, 4 out of scope**
+**Completion: 64% (38/59 features)**
+**Remaining: 17 features to implement, 4 out of scope**
 
 ---
 
@@ -159,11 +159,11 @@ Implementation status of all features, compared against nginx. Last updated: 202
 
 ### Phase 4 — Advanced
 
-| # | Feature | Why |
-|---|---------|-----|
-| 29 | Active health checks | Automatic backend failover |
-| 40 | Content replacement | Response body rewriting |
-| 43 | Brotli compression | Better compression than gzip |
-| 47 | Map directive | Variable-based config flexibility |
-| 48 | Split clients | A/B testing |
-| 49 | Traffic mirroring | Safe deployment testing |
+| # | Feature | Status | Why |
+|---|---------|--------|-----|
+| 29 | Active health checks | ✅ Done | Automatic backend failover |
+| 40 | Content replacement | ❌ Next | Response body rewriting |
+| 43 | Brotli compression | ❌ | Better compression than gzip |
+| 47 | Map directive | ❌ | Variable-based config flexibility |
+| 48 | Split clients | ❌ | A/B testing |
+| 49 | Traffic mirroring | ❌ | Safe deployment testing |

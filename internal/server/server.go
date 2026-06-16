@@ -62,6 +62,9 @@ func (s *Server) initUpstreams() {
 			Idle:      upstreamCfg.GetIdleTimeout(),
 			Keepalive: upstreamCfg.Keepalive,
 		}, upstreamCfg.SetHeaders, upstreamCfg.GetBuffering(), upstreamCfg.GetRetries())
+		if upstreamCfg.HealthCheck != nil && upstreamCfg.HealthCheck.Enabled {
+			proxy.StartHealthCheck(servers, upstreamCfg.HealthCheck.GetInterval(), upstreamCfg.HealthCheck.Path)
+		}
 	}
 }
 

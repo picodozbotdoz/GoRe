@@ -109,11 +109,25 @@ type Upstream struct {
 	SetHeaders      map[string]string `yaml:"set_headers,omitempty"`
 	Buffering       *bool             `yaml:"buffering,omitempty"`
 	Retries         int               `yaml:"retries,omitempty"`
+	HealthCheck     *HealthCheckConfig `yaml:"health_check,omitempty"`
 	Keepalive       int               `yaml:"keepalive,omitempty"`
 	ConnectTimeout  int               `yaml:"connect_timeout,omitempty"`
 	ReadTimeout     int               `yaml:"read_timeout,omitempty"`
 	SendTimeout     int               `yaml:"send_timeout,omitempty"`
 	IdleTimeout     int               `yaml:"idle_timeout,omitempty"`
+}
+
+type HealthCheckConfig struct {
+	Enabled  bool   `yaml:"enabled"`
+	Interval int    `yaml:"interval,omitempty"`
+	Path     string `yaml:"path,omitempty"`
+}
+
+func (h *HealthCheckConfig) GetInterval() int {
+	if h == nil || h.Interval == 0 {
+		return 10
+	}
+	return h.Interval
 }
 
 func (u *Upstream) GetRetries() int {
