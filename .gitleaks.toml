@@ -1,0 +1,25 @@
+title = "GoRe gitleaks config"
+
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Test certificates generated at runtime"
+paths = [
+  '''bench_test\.go$''',
+  '''h3_compat_test\.go$''',
+  '''server_test\.go$''',
+]
+
+[[allowlists]]
+description = "Test fixtures"
+paths = [
+  '''static_test\.go$''',
+]
+
+[[allowlists]]
+description = "Documentation examples"
+paths = [
+  '''docs/.*\.md$''',
+  '''README\.md$''',
+]

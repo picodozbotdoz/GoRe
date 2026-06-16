@@ -6,3 +6,4 @@ gore
 *.pem
 secrets*
 *.yaml
+.codegraph/
