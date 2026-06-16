@@ -10,6 +10,7 @@ import (
 	"github.com/user/gore/internal/modules/brotli"
 	"github.com/user/gore/internal/modules/bodylimit"
 	"github.com/user/gore/internal/modules/gzip"
+	"github.com/user/gore/internal/modules/gunzip"
 	"github.com/user/gore/internal/modules/headers"
 	"github.com/user/gore/internal/modules/limitconn"
 	"github.com/user/gore/internal/modules/mapmodule"
@@ -27,6 +28,10 @@ func BuildChain(cfg *config.ModulesConfig, next http.Handler) http.Handler {
 
 	if cfg.Brotli != nil && cfg.Brotli.Enabled {
 		handler = brotli.New(cfg.Brotli.Level, cfg.Brotli.Types)(handler)
+	}
+
+	if cfg.Gunzip != nil && *cfg.Gunzip {
+		handler = gunzip.New()(handler)
 	}
 
 	if cfg.Headers != nil {

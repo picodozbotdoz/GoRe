@@ -73,7 +73,7 @@ Implementation status of all features, compared against nginx. Last updated: 202
 | 41 | Server Side Includes | `ssi` | ❌ | Large | Parse SSI directives in HTML |
 | 42 | Proxy cache | `proxy_cache` | ✅ | — | Cache upstream responses on disk |
 | 43 | Brotli compression | `brotli` | ✅ | — | Brotli compression middleware |
-| 44 | Gunzip (decompress) | `gunzip` | ❌ | Small | Decompress upstream for old clients |
+| 44 | Gunzip (decompress) | `gunzip` | ✅ | — | Decompress upstream for old clients |
 | 45 | WebDAV | `dav_methods` | ❌ | Large | PUT, DELETE, MKCOL, COPY, MOVE |
 | 46 | GeoIP | `geoip` | ❌ | Medium | IP-to-country lookup |
 | 47 | Map directive | `map` | ✅ | — | Variable mapping based on conditions |
@@ -107,17 +107,17 @@ Implementation status of all features, compared against nginx. Last updated: 202
 | Proxy | 9 | 8 | 0 | 1 | 0 |
 | Static | 5 | 5 | 0 | 0 | 0 |
 | Security | 5 | 3 | 0 | 2 | 0 |
-| Compression | 4 | 2 | 0 | 2 | 0 |
+| Compression | 4 | 3 | 0 | 1 | 0 |
 | Headers | 3 | 2 | 0 | 1 | 0 |
 | Limits | 3 | 3 | 0 | 0 | 0 |
 | Logging | 4 | 2 | 0 | 2 | 0 |
 | TLS | 3 | 1 | 0 | 2 | 0 |
 | Rewrite/Routing | 3 | 2 | 0 | 1 | 0 |
 | Advanced | 13 | 0 | 0 | 9 | 4 |
-| **Total** | **59** | **44** | **0** | **11** | **4** |
+| **Total** | **59** | **45** | **0** | **10** | **4** |
 
-**Completion: 75% (44/59 features)**
-**Remaining: 11 features to implement, 4 out of scope**
+**Completion: 76% (45/59 features)**
+**Remaining: 10 features to implement, 4 out of scope**
 
 ---
 

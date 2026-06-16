@@ -201,6 +201,7 @@ type ModulesConfig struct {
 	BasicAuth         *BasicAuthConfig `yaml:"basic_auth,omitempty"`
 	Map               []MapConfig      `yaml:"map,omitempty"`
 	SplitClients      []SplitConfig    `yaml:"split_clients,omitempty"`
+	Gunzip            *bool            `yaml:"gunzip,omitempty"`
 }
 
 type SplitConfig struct {
