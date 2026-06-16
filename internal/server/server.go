@@ -19,8 +19,9 @@ import (
 	"golang.org/x/net/http2/h2c"
 
 	"github.com/user/gore/internal/config"
-	gorelog "github.com/user/gore/internal/log"
+	gorelog 	"github.com/user/gore/internal/log"
 	"github.com/user/gore/internal/modules"
+	"github.com/user/gore/internal/modules/authrequest"
 	"github.com/user/gore/internal/modules/static"
 	"github.com/user/gore/internal/modules/status"
 	"github.com/user/gore/internal/proxy"
@@ -184,6 +185,9 @@ func (s *Server) buildLocationHandler(loc config.Location) http.Handler {
 	}
 	if handler == nil {
 		handler = http.NotFoundHandler()
+	}
+	if loc.AuthRequest != "" {
+		handler = authrequest.New(loc.AuthRequest)(handler)
 	}
 	return modules.BuildChain(&s.cfg.Modules, handler)
 }

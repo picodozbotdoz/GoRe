@@ -59,7 +59,7 @@ Implementation status of all features, compared against nginx. Last updated: 202
 | 34 | ETag generation | Automatic | ✅ | — | Generate ETag for static files |
 | 35 | Cache-Control headers | `expires` | ✅ | — | Configurable cache headers per location |
 | 36 | HTTP Basic Auth | `auth_basic` | ✅ | — | Username/password authentication |
-| 37 | Auth subrequest | `auth_request` | ❌ | Large | Delegate auth to external service |
+| 37 | Auth subrequest | `auth_request` | ✅ | — | Delegate auth to external service |
 | 38 | TLS cipher config | `ssl_ciphers` | ❌ | Small | Configurable cipher suites |
 | 39 | Stub status endpoint | `stub_status` | ✅ | — | `/nginx_status` equivalent for monitoring |
 
@@ -106,7 +106,7 @@ Implementation status of all features, compared against nginx. Last updated: 202
 | Core HTTP | 7 | 7 | 0 | 0 | 0 |
 | Proxy | 9 | 8 | 0 | 1 | 0 |
 | Static | 5 | 5 | 0 | 0 | 0 |
-| Security | 5 | 2 | 0 | 3 | 0 |
+| Security | 5 | 3 | 0 | 2 | 0 |
 | Compression | 4 | 1 | 0 | 3 | 0 |
 | Headers | 3 | 2 | 0 | 1 | 0 |
 | Limits | 3 | 3 | 0 | 0 | 0 |
@@ -114,10 +114,10 @@ Implementation status of all features, compared against nginx. Last updated: 202
 | TLS | 3 | 1 | 0 | 2 | 0 |
 | Rewrite/Routing | 3 | 2 | 0 | 1 | 0 |
 | Advanced | 13 | 0 | 0 | 9 | 4 |
-| **Total** | **59** | **35** | **0** | **20** | **4** |
+| **Total** | **59** | **36** | **0** | **19** | **4** |
 
-**Completion: 59% (35/59 features)**
-**Remaining: 20 features to implement, 4 out of scope**
+**Completion: 61% (36/59 features)**
+**Remaining: 19 features to implement, 4 out of scope**
 
 ---
 
@@ -154,8 +154,8 @@ Implementation status of all features, compared against nginx. Last updated: 202
 | 24 | try_files | ✅ Done | Elegant fallback chain for SPAs |
 | 27 | Proxy buffering | ✅ Done | Control memory usage for large responses |
 | 28 | Proxy retry | ✅ Done | Improve availability with automatic failover |
-| 37 | Auth subrequest | ❌ Next | External auth service delegation |
-| 38 | TLS cipher config | ❌ | Security hardening |
+| 37 | Auth subrequest | ✅ Done | External auth service delegation |
+| 38 | TLS cipher config | ❌ Next | Security hardening |
 
 ### Phase 4 — Advanced
 

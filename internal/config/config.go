@@ -86,6 +86,7 @@ type Location struct {
 	Autoindex    *bool     `yaml:"autoindex,omitempty"`
 	CacheControl string    `yaml:"cache_control,omitempty"`
 	TryFiles     []string  `yaml:"try_files,omitempty"`
+	AuthRequest  string    `yaml:"auth_request,omitempty"`
 }
 
 type Rewrite struct {
