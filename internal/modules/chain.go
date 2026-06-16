@@ -7,6 +7,7 @@ import (
 	"github.com/user/gore/internal/log"
 	"github.com/user/gore/internal/modules/access"
 	"github.com/user/gore/internal/modules/basicauth"
+	"github.com/user/gore/internal/modules/brotli"
 	"github.com/user/gore/internal/modules/bodylimit"
 	"github.com/user/gore/internal/modules/gzip"
 	"github.com/user/gore/internal/modules/headers"
@@ -20,6 +21,10 @@ func BuildChain(cfg *config.ModulesConfig, next http.Handler) http.Handler {
 
 	if cfg.Gzip != nil && cfg.Gzip.Enabled {
 		handler = gzip.New(cfg.Gzip.Level, cfg.Gzip.Types).ServeHTTP(handler)
+	}
+
+	if cfg.Brotli != nil && cfg.Brotli.Enabled {
+		handler = brotli.New(cfg.Brotli.Level, cfg.Brotli.Types)(handler)
 	}
 
 	if cfg.Headers != nil {

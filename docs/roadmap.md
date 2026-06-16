@@ -72,7 +72,7 @@ Implementation status of all features, compared against nginx. Last updated: 202
 | 40 | Content replacement | `sub_filter` | ✅ | — | Replace strings in response body |
 | 41 | Server Side Includes | `ssi` | ❌ | Large | Parse SSI directives in HTML |
 | 42 | Proxy cache | `proxy_cache` | ❌ | Large | Cache upstream responses on disk |
-| 43 | Brotli compression | `brotli` | ❌ | Medium | Brotli compression middleware |
+| 43 | Brotli compression | `brotli` | ✅ | — | Brotli compression middleware |
 | 44 | Gunzip (decompress) | `gunzip` | ❌ | Small | Decompress upstream for old clients |
 | 45 | WebDAV | `dav_methods` | ❌ | Large | PUT, DELETE, MKCOL, COPY, MOVE |
 | 46 | GeoIP | `geoip` | ❌ | Medium | IP-to-country lookup |
@@ -107,17 +107,17 @@ Implementation status of all features, compared against nginx. Last updated: 202
 | Proxy | 9 | 8 | 0 | 1 | 0 |
 | Static | 5 | 5 | 0 | 0 | 0 |
 | Security | 5 | 3 | 0 | 2 | 0 |
-| Compression | 4 | 1 | 0 | 3 | 0 |
+| Compression | 4 | 2 | 0 | 2 | 0 |
 | Headers | 3 | 2 | 0 | 1 | 0 |
 | Limits | 3 | 3 | 0 | 0 | 0 |
 | Logging | 4 | 2 | 0 | 2 | 0 |
 | TLS | 3 | 1 | 0 | 2 | 0 |
 | Rewrite/Routing | 3 | 2 | 0 | 1 | 0 |
 | Advanced | 13 | 0 | 0 | 9 | 4 |
-| **Total** | **59** | **39** | **0** | **16** | **4** |
+| **Total** | **59** | **40** | **0** | **15** | **4** |
 
-**Completion: 66% (39/59 features)**
-**Remaining: 16 features to implement, 4 out of scope**
+**Completion: 68% (40/59 features)**
+**Remaining: 15 features to implement, 4 out of scope**
 
 ---
 
@@ -163,7 +163,7 @@ Implementation status of all features, compared against nginx. Last updated: 202
 |---|---------|--------|-----|
 | 29 | Active health checks | ✅ Done | Automatic backend failover |
 | 40 | Content replacement | ✅ Done | Response body rewriting |
-| 43 | Brotli compression | ❌ Next | Better compression than gzip |
-| 47 | Map directive | ❌ | Variable-based config flexibility |
+| 43 | Brotli compression | ✅ Done | Better compression than gzip |
+| 47 | Map directive | ❌ Next | Variable-based config flexibility |
 | 48 | Split clients | ❌ | A/B testing |
 | 49 | Traffic mirroring | ❌ | Safe deployment testing |

@@ -180,6 +180,7 @@ type UpstreamServer struct {
 
 type ModulesConfig struct {
 	Gzip              *GzipConfig      `yaml:"gzip,omitempty"`
+	Brotli            *BrotliConfig    `yaml:"brotli,omitempty"`
 	Access            *AccessConfig    `yaml:"access,omitempty"`
 	RateLimit         *RateLimitConfig `yaml:"rate_limit,omitempty"`
 	LimitConn         *LimitConnConfig `yaml:"limit_conn,omitempty"`
@@ -190,6 +191,12 @@ type ModulesConfig struct {
 	Status            *StatusConfig    `yaml:"status,omitempty"`
 	RealIP            *RealIPConfig    `yaml:"real_ip,omitempty"`
 	BasicAuth         *BasicAuthConfig `yaml:"basic_auth,omitempty"`
+}
+
+type BrotliConfig struct {
+	Enabled bool     `yaml:"enabled"`
+	Level   int      `yaml:"level,omitempty"`
+	Types   []string `yaml:"types,omitempty"`
 }
 
 type BasicAuthConfig struct {
