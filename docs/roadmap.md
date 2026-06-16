@@ -58,7 +58,7 @@ Implementation status of all features, compared against nginx. Last updated: 202
 | 33 | Request header manipulation | `proxy_set_header` | ✅ | — | Set/add/remove headers on proxied request |
 | 34 | ETag generation | Automatic | ✅ | — | Generate ETag for static files |
 | 35 | Cache-Control headers | `expires` | ✅ | — | Configurable cache headers per location |
-| 36 | HTTP Basic Auth | `auth_basic` | ❌ | Medium | Username/password authentication |
+| 36 | HTTP Basic Auth | `auth_basic` | ✅ | — | Username/password authentication |
 | 37 | Auth subrequest | `auth_request` | ❌ | Large | Delegate auth to external service |
 | 38 | TLS cipher config | `ssl_ciphers` | ❌ | Small | Configurable cipher suites |
 | 39 | Stub status endpoint | `stub_status` | ✅ | — | `/nginx_status` equivalent for monitoring |
@@ -106,7 +106,7 @@ Implementation status of all features, compared against nginx. Last updated: 202
 | Core HTTP | 7 | 7 | 0 | 0 | 0 |
 | Proxy | 9 | 6 | 0 | 3 | 0 |
 | Static | 5 | 5 | 0 | 0 | 0 |
-| Security | 5 | 1 | 0 | 4 | 0 |
+| Security | 5 | 2 | 0 | 3 | 0 |
 | Compression | 4 | 1 | 0 | 3 | 0 |
 | Headers | 3 | 2 | 0 | 1 | 0 |
 | Limits | 3 | 3 | 0 | 0 | 0 |
@@ -114,10 +114,10 @@ Implementation status of all features, compared against nginx. Last updated: 202
 | TLS | 3 | 1 | 0 | 2 | 0 |
 | Rewrite/Routing | 3 | 1 | 0 | 2 | 0 |
 | Advanced | 13 | 0 | 0 | 9 | 4 |
-| **Total** | **59** | **31** | **0** | **24** | **4** |
+| **Total** | **59** | **32** | **0** | **23** | **4** |
 
-**Completion: 53% (31/59 features)**
-**Remaining: 24 features to implement, 4 out of scope**
+**Completion: 54% (32/59 features)**
+**Remaining: 23 features to implement, 4 out of scope**
 
 ---
 
@@ -150,8 +150,8 @@ Implementation status of all features, compared against nginx. Last updated: 202
 
 | # | Feature | Status | Why |
 |---|---------|--------|-----|
-| 36 | HTTP Basic Auth | ❌ Next | Simple auth for admin panels |
-| 24 | try_files | ❌ | Elegant fallback chain for SPAs |
+| 36 | HTTP Basic Auth | ✅ Done | Simple auth for admin panels |
+| 24 | try_files | ❌ Next | Elegant fallback chain for SPAs |
 | 27 | Proxy buffering | ❌ | Control memory usage for large responses |
 | 28 | Proxy retry | ❌ | Improve availability with automatic failover |
 | 37 | Auth subrequest | ❌ | External auth service delegation |

@@ -153,6 +153,12 @@ type ModulesConfig struct {
 	ClientMaxBodySize string           `yaml:"client_max_body_size,omitempty"`
 	Status            *StatusConfig    `yaml:"status,omitempty"`
 	RealIP            *RealIPConfig    `yaml:"real_ip,omitempty"`
+	BasicAuth         *BasicAuthConfig `yaml:"basic_auth,omitempty"`
+}
+
+type BasicAuthConfig struct {
+	Realm    string            `yaml:"realm,omitempty"`
+	Users    map[string]string `yaml:"users,omitempty"`
 }
 
 type RealIPConfig struct {

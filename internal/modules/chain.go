@@ -6,6 +6,7 @@ import (
 	"github.com/user/gore/internal/config"
 	"github.com/user/gore/internal/log"
 	"github.com/user/gore/internal/modules/access"
+	"github.com/user/gore/internal/modules/basicauth"
 	"github.com/user/gore/internal/modules/bodylimit"
 	"github.com/user/gore/internal/modules/gzip"
 	"github.com/user/gore/internal/modules/headers"
@@ -55,6 +56,10 @@ func BuildChain(cfg *config.ModulesConfig, next http.Handler) http.Handler {
 
 	if cfg.RealIP != nil {
 		handler = realip.New(cfg.RealIP.From)(handler)
+	}
+
+	if cfg.BasicAuth != nil && len(cfg.BasicAuth.Users) > 0 {
+		handler = basicauth.New(cfg.BasicAuth.Realm, cfg.BasicAuth.Users)(handler)
 	}
 
 	handler = log.AccessMiddleware(
