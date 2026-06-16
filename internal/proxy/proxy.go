@@ -3,10 +3,13 @@ package proxy
 import (
 	"crypto/tls"
 	"fmt"
+	"io"
 	"net"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
+	"strings"
+	"sync"
 	"time"
 )
 
@@ -88,5 +91,67 @@ func (u *Upstream) ErrorHandler(w http.ResponseWriter, r *http.Request, err erro
 }
 
 func (u *Upstream) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	if isWebSocketUpgrade(r) {
+		u.proxyWebSocket(w, r)
+		return
+	}
 	u.Proxy.ServeHTTP(w, r)
+}
+
+func isWebSocketUpgrade(r *http.Request) bool {
+	return strings.EqualFold(r.Header.Get("Connection"), "upgrade") &&
+		strings.EqualFold(r.Header.Get("Upgrade"), "websocket")
+}
+
+func (u *Upstream) proxyWebSocket(w http.ResponseWriter, r *http.Request) {
+	server := u.Balancer.Next()
+	if server == nil {
+		http.Error(w, "Bad Gateway", http.StatusBadGateway)
+		return
+	}
+
+	hijacker, ok := w.(http.Hijacker)
+	if !ok {
+		http.Error(w, "WebSocket not supported", http.StatusInternalServerError)
+		return
+	}
+
+	clientConn, clientBuf, err := hijacker.Hijack()
+	if err != nil {
+		fmt.Printf("websocket hijack error: %v\n", err)
+		return
+	}
+	defer clientConn.Close()
+
+	backendAddr := server.Addr
+	backendConn, err := net.DialTimeout("tcp", backendAddr, 10*time.Second)
+	if err != nil {
+		fmt.Printf("websocket backend dial error: %v\n", err)
+		return
+	}
+	defer backendConn.Close()
+
+	// Forward the original HTTP request to backend
+	r.URL.Scheme = "http"
+	r.URL.Host = backendAddr
+	r.Header.Del("Connection")
+	r.Header.Del("Upgrade")
+	if err := r.Write(backendConn); err != nil {
+		return
+	}
+
+	var wg sync.WaitGroup
+	wg.Add(2)
+
+	go func() {
+		defer wg.Done()
+		io.Copy(backendConn, io.MultiReader(clientBuf, clientConn))
+	}()
+
+	go func() {
+		defer wg.Done()
+		io.Copy(clientConn, backendConn)
+	}()
+
+	wg.Wait()
 }

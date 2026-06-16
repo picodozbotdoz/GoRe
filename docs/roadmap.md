@@ -47,7 +47,7 @@ Implementation status of all features, compared against nginx. Last updated: 202
 | 22 | Error logging levels | `error_log` | ✅ | — | Replace `log.Printf` with leveled logger |
 | 23 | URL rewrite rules | `rewrite` | ✅ | — | Regex-based URL rewriting with flags (permanent/temporary) |
 | 24 | `try_files` | `try_files` | ❌ | Medium | Fallback chain: `$uri $uri/ =404` |
-| 25 | WebSocket upgrade | `proxy_pass` + Upgrade | ❌ | Medium | Handle `Upgrade: websocket` header, bidirectional streaming |
+| 25 | WebSocket upgrade | `proxy_pass` + Upgrade | ✅ | — | Handle `Upgrade: websocket` header, bidirectional streaming |
 | 26 | Proxy timeouts | `proxy_connect_timeout`, `proxy_read_timeout` | ✅ | — | Per-location timeout configuration |
 | 27 | Proxy buffering | `proxy_buffering`, `proxy_buffer_size` | ❌ | Small | Buffer upstream response before sending to client |
 | 28 | Proxy retry | `proxy_next_upstream` | ❌ | Medium | Retry on next upstream on failure |
@@ -104,7 +104,7 @@ Implementation status of all features, compared against nginx. Last updated: 202
 | Category | Total | Implemented | Partial | Planned | Out of Scope |
 |----------|-------|-------------|---------|---------|--------------|
 | Core HTTP | 7 | 7 | 0 | 0 | 0 |
-| Proxy | 9 | 4 | 0 | 5 | 0 |
+| Proxy | 9 | 5 | 0 | 4 | 0 |
 | Static | 5 | 3 | 0 | 2 | 0 |
 | Security | 5 | 1 | 0 | 4 | 0 |
 | Compression | 4 | 1 | 0 | 3 | 0 |
@@ -114,10 +114,10 @@ Implementation status of all features, compared against nginx. Last updated: 202
 | TLS | 3 | 1 | 0 | 2 | 0 |
 | Rewrite/Routing | 3 | 1 | 0 | 2 | 0 |
 | Advanced | 13 | 0 | 0 | 9 | 4 |
-| **Total** | **59** | **25** | **0** | **30** | **4** |
+| **Total** | **59** | **26** | **0** | **29** | **4** |
 
-**Completion: 42% (25/59 features)**
-**Remaining: 30 features to implement, 4 out of scope**
+**Completion: 44% (26/59 features)**
+**Remaining: 29 features to implement, 4 out of scope**
 
 ---
 
@@ -139,12 +139,12 @@ Implementation status of all features, compared against nginx. Last updated: 202
 | # | Feature | Status | Why |
 |---|---------|--------|-----|
 | 23 | URL rewrite rules | ✅ Done | Complex routing requires regex rewrites |
-| 25 | WebSocket upgrade | ❌ Next | Modern apps need real-time communication |
-| 30 | Upstream keepalive | Connection pooling reduces latency |
-| 32 | Concurrent connection limit | DDoS protection beyond rate limiting |
-| 34 | ETag generation | Browser caching for static files |
-| 35 | Cache-Control headers | CDN and browser cache control |
-| 50 | Real IP extraction | Accurate client IP behind load balancers |
+| 25 | WebSocket upgrade | ✅ Done | Modern apps need real-time communication |
+| 30 | Upstream keepalive | ❌ Next | Connection pooling reduces latency |
+| 32 | Concurrent connection limit | ❌ | DDoS protection beyond rate limiting |
+| 34 | ETag generation | ❌ | Browser caching for static files |
+| 35 | Cache-Control headers | ❌ | CDN and browser cache control |
+| 50 | Real IP extraction | ❌ | Accurate client IP behind load balancers |
 
 ### Phase 3 — Authentication & Security
 
