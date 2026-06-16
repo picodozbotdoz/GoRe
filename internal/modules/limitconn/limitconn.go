@@ -8,9 +8,9 @@ import (
 )
 
 type Limiter struct {
-	mu       sync.Mutex
-	counts   map[string]int
-	limit    int
+	mu     sync.Mutex
+	counts map[string]int
+	limit  int
 }
 
 func New(limit int) *Limiter {

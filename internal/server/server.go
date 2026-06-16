@@ -19,25 +19,25 @@ import (
 	"golang.org/x/net/http2/h2c"
 
 	"github.com/user/gore/internal/config"
-	gorelog 	"github.com/user/gore/internal/log"
+	gorelog "github.com/user/gore/internal/log"
 	"github.com/user/gore/internal/modules"
 	"github.com/user/gore/internal/modules/authrequest"
 	"github.com/user/gore/internal/modules/mirror"
 	"github.com/user/gore/internal/modules/static"
-	"github.com/user/gore/internal/modules/subfilter"
 	"github.com/user/gore/internal/modules/status"
+	"github.com/user/gore/internal/modules/subfilter"
 	"github.com/user/gore/internal/proxy"
 	"github.com/user/gore/internal/router"
 )
 
 type Server struct {
-	cfg        *config.Config
-	router     *router.Router
-	servers    []*http.Server
-	http3Srvs  []*http3.Server
-	upstreams  map[string]*proxy.Upstream
-	addrs      []string
-	addrMu     sync.Mutex
+	cfg       *config.Config
+	router    *router.Router
+	servers   []*http.Server
+	http3Srvs []*http3.Server
+	upstreams map[string]*proxy.Upstream
+	addrs     []string
+	addrMu    sync.Mutex
 }
 
 func New(cfg *config.Config) *Server {
@@ -206,7 +206,7 @@ func (s *Server) buildLocationHandler(loc config.Location) http.Handler {
 func (s *Server) buildHTTP2Config(listen *config.Listen) *http2.Server {
 	return &http2.Server{
 		MaxConcurrentStreams: uint32(listen.HTTP2.GetMaxConcurrentStreams()),
-		MaxReadFrameSize:    uint32(listen.HTTP2.GetMaxFrameSize()),
+		MaxReadFrameSize:     uint32(listen.HTTP2.GetMaxFrameSize()),
 	}
 }
 

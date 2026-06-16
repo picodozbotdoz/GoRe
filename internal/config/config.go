@@ -31,9 +31,9 @@ type TLS struct {
 }
 
 type HTTP2 struct {
-	Enabled             *bool `yaml:"enabled,omitempty"`
+	Enabled              *bool `yaml:"enabled,omitempty"`
 	MaxConcurrentStreams int   `yaml:"max_concurrent_streams,omitempty"`
-	MaxFrameSize        int   `yaml:"max_frame_size,omitempty"`
+	MaxFrameSize         int   `yaml:"max_frame_size,omitempty"`
 }
 
 func (h *HTTP2) GetMaxConcurrentStreams() int {
@@ -51,7 +51,7 @@ func (h *HTTP2) GetMaxFrameSize() int {
 }
 
 type HTTP3 struct {
-	Enabled    *bool `yaml:"enabled,omitempty"`
+	Enabled     *bool `yaml:"enabled,omitempty"`
 	MaxStreams  int   `yaml:"max_streams,omitempty"`
 	IdleTimeout int   `yaml:"idle_timeout,omitempty"`
 }
@@ -106,18 +106,18 @@ type Proxy struct {
 }
 
 type Upstream struct {
-	Strategy        string            `yaml:"strategy"`
-	Servers         []UpstreamServer  `yaml:"servers"`
-	SetHeaders      map[string]string `yaml:"set_headers,omitempty"`
-	Buffering       *bool             `yaml:"buffering,omitempty"`
-	Retries         int               `yaml:"retries,omitempty"`
-	HealthCheck     *HealthCheckConfig `yaml:"health_check,omitempty"`
-	Cache           *CacheConfig       `yaml:"cache,omitempty"`
-	Keepalive       int               `yaml:"keepalive,omitempty"`
-	ConnectTimeout  int               `yaml:"connect_timeout,omitempty"`
-	ReadTimeout     int               `yaml:"read_timeout,omitempty"`
-	SendTimeout     int               `yaml:"send_timeout,omitempty"`
-	IdleTimeout     int               `yaml:"idle_timeout,omitempty"`
+	Strategy       string             `yaml:"strategy"`
+	Servers        []UpstreamServer   `yaml:"servers"`
+	SetHeaders     map[string]string  `yaml:"set_headers,omitempty"`
+	Buffering      *bool              `yaml:"buffering,omitempty"`
+	Retries        int                `yaml:"retries,omitempty"`
+	HealthCheck    *HealthCheckConfig `yaml:"health_check,omitempty"`
+	Cache          *CacheConfig       `yaml:"cache,omitempty"`
+	Keepalive      int                `yaml:"keepalive,omitempty"`
+	ConnectTimeout int                `yaml:"connect_timeout,omitempty"`
+	ReadTimeout    int                `yaml:"read_timeout,omitempty"`
+	SendTimeout    int                `yaml:"send_timeout,omitempty"`
+	IdleTimeout    int                `yaml:"idle_timeout,omitempty"`
 }
 
 type HealthCheckConfig struct {
@@ -217,10 +217,10 @@ type SplitRule struct {
 }
 
 type MapConfig struct {
-	Source  string      `yaml:"source"`
-	Target  string      `yaml:"target"`
-	Rules   []MapRule   `yaml:"rules"`
-	Default string      `yaml:"default,omitempty"`
+	Source  string    `yaml:"source"`
+	Target  string    `yaml:"target"`
+	Rules   []MapRule `yaml:"rules"`
+	Default string    `yaml:"default,omitempty"`
 }
 
 type MapRule struct {
@@ -229,8 +229,8 @@ type MapRule struct {
 }
 
 type BasicAuthConfig struct {
-	Realm    string            `yaml:"realm,omitempty"`
-	Users    map[string]string `yaml:"users,omitempty"`
+	Realm string            `yaml:"realm,omitempty"`
+	Users map[string]string `yaml:"users,omitempty"`
 }
 
 type RealIPConfig struct {

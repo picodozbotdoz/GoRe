@@ -42,9 +42,9 @@ func TestSplitFiftyFifty(t *testing.T) {
 func TestSplitDefault(t *testing.T) {
 	handler := New([]config.SplitConfig{
 		{
-			Source: "$remote_addr",
-			Target: "X-Variant",
-			Rules:  []config.SplitRule{},
+			Source:  "$remote_addr",
+			Target:  "X-Variant",
+			Rules:   []config.SplitRule{},
 			Default: "default",
 		},
 	})(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

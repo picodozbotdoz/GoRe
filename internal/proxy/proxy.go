@@ -176,10 +176,9 @@ type retryResponseWriter struct {
 
 type cacheCaptureWriter struct {
 	http.ResponseWriter
-	header      http.Header
-	body        []byte
-	status      int
-	headerReady bool
+	header http.Header
+	body   []byte
+	status int
 }
 
 func (ccw *cacheCaptureWriter) Header() http.Header {

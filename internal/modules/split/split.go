@@ -28,7 +28,10 @@ func New(configs []config.SplitConfig) func(http.Handler) http.Handler {
 	var sc splitClient
 	for _, cfg := range configs {
 		sm := splitMapping{source: cfg.Source, target: cfg.Target}
-		var pairs []struct{ pct float64; value string }
+		var pairs []struct {
+			pct   float64
+			value string
+		}
 		total := 0.0
 		for _, r := range cfg.Rules {
 			pct := r.Percent
@@ -38,11 +41,17 @@ func New(configs []config.SplitConfig) func(http.Handler) http.Handler {
 			if pct <= 0 {
 				continue
 			}
-			pairs = append(pairs, struct{ pct float64; value string }{pct: pct, value: r.Value})
+			pairs = append(pairs, struct {
+				pct   float64
+				value string
+			}{pct: pct, value: r.Value})
 			total += pct
 		}
 		if total < 100 {
-			pairs = append(pairs, struct{ pct float64; value string }{pct: 100 - total, value: cfg.Default})
+			pairs = append(pairs, struct {
+				pct   float64
+				value string
+			}{pct: 100 - total, value: cfg.Default})
 		}
 		sort.Slice(pairs, func(i, j int) bool { return pairs[i].value < pairs[j].value })
 

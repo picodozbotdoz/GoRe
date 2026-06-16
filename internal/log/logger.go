@@ -61,12 +61,11 @@ type Logger struct {
 	mu     sync.Mutex
 	level  Level
 	output io.Writer
-	file   *os.File
 }
 
 type Config struct {
-	Level     string `yaml:"level,omitempty"`
-	Output    string `yaml:"output,omitempty"`
+	Level     string           `yaml:"level,omitempty"`
+	Output    string           `yaml:"output,omitempty"`
 	AccessLog *AccessLogConfig `yaml:"access_log,omitempty"`
 }
 

@@ -42,8 +42,8 @@ func New(level int, types []string) func(http.Handler) http.Handler {
 
 			var compressed bytes.Buffer
 			writer := brotli.NewWriterLevel(&compressed, level)
-			writer.Write(cw.buf.Bytes())
-			writer.Close()
+			_, _ = writer.Write(cw.buf.Bytes())
+			_ = writer.Close()
 
 			copyHeaders(w, cw)
 			w.Header().Set("Content-Encoding", "br")

@@ -15,18 +15,18 @@ import (
 	"github.com/user/gore/internal/config"
 	"github.com/user/gore/internal/modules"
 	"github.com/user/gore/internal/modules/access"
+	"github.com/user/gore/internal/modules/static"
 	"github.com/user/gore/internal/proxy"
 	"github.com/user/gore/internal/router"
-	"github.com/user/gore/internal/modules/static"
 )
 
 // Test compatibility with nginx access.t
 func TestAccessModule(t *testing.T) {
 	tests := []struct {
-		name    string
-		rules   []access.Rule
-		remote  string
-		want    int
+		name   string
+		rules  []access.Rule
+		remote string
+		want   int
 	}{
 		{
 			name:   "allow all",
@@ -139,7 +139,7 @@ func TestHeadersModule(t *testing.T) {
 		handler := modules.BuildChain(&config.ModulesConfig{
 			Headers: &config.HeadersConfig{
 				Add: map[string]string{
-					"X-Frame-Options": "DENY",
+					"X-Frame-Options":  "DENY",
 					"X-XSS-Protection": "1; mode=block",
 				},
 			},
@@ -375,8 +375,8 @@ func TestLimitReqModule(t *testing.T) {
 // Test compatibility with nginx http_uri.t
 func TestURIHandling(t *testing.T) {
 	tests := []struct {
-		path   string
-		want   int
+		path string
+		want int
 	}{
 		{"/", 200},
 		{"/index.html", 200},
