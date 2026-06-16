@@ -87,7 +87,7 @@ func (s *Server) buildLocationHandler(loc config.Location) http.Handler {
 			autoindex = *loc.Autoindex
 		}
 		prefix := loc.Path
-		rootHandler := static.New(loc.Root, autoindex)
+		rootHandler := static.NewWithCache(loc.Root, autoindex, loc.CacheControl)
 		handler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			r.URL.Path = r.URL.Path[len(prefix):]
 			if r.URL.Path == "" {

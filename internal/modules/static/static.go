@@ -10,12 +10,17 @@ import (
 )
 
 type Handler struct {
-	Root      string
-	Autoindex bool
+	Root         string
+	Autoindex    bool
+	CacheControl string
 }
 
 func New(root string, autoindex bool) *Handler {
 	return &Handler{Root: root, Autoindex: autoindex}
+}
+
+func NewWithCache(root string, autoindex bool, cacheControl string) *Handler {
+	return &Handler{Root: root, Autoindex: autoindex, CacheControl: cacheControl}
 }
 
 func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -84,6 +89,9 @@ func (h *Handler) serveFile(w http.ResponseWriter, r *http.Request, filePath str
 	etag := generateETag(info)
 	w.Header().Set("ETag", etag)
 	w.Header().Set("Content-Length", strconv.FormatInt(info.Size(), 10))
+	if h.CacheControl != "" {
+		w.Header().Set("Cache-Control", h.CacheControl)
+	}
 	http.ServeContent(w, r, info.Name(), info.ModTime(), file)
 }
 
