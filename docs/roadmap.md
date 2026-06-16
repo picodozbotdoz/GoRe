@@ -48,7 +48,7 @@ Implementation status of all features, compared against nginx. Last updated: 202
 | 23 | URL rewrite rules | `rewrite` | ❌ | Medium | Regex-based URL rewriting with flags (permanent/temporary) |
 | 24 | `try_files` | `try_files` | ❌ | Medium | Fallback chain: `$uri $uri/ =404` |
 | 25 | WebSocket upgrade | `proxy_pass` + Upgrade | ❌ | Medium | Handle `Upgrade: websocket` header, bidirectional streaming |
-| 26 | Proxy timeouts | `proxy_connect_timeout`, `proxy_read_timeout` | ❌ | Small | Per-location timeout configuration |
+| 26 | Proxy timeouts | `proxy_connect_timeout`, `proxy_read_timeout` | ✅ | — | Per-location timeout configuration |
 | 27 | Proxy buffering | `proxy_buffering`, `proxy_buffer_size` | ❌ | Small | Buffer upstream response before sending to client |
 | 28 | Proxy retry | `proxy_next_upstream` | ❌ | Medium | Retry on next upstream on failure |
 | 29 | Active health checks | `health_check` | ❌ | Large | Periodic backend health probing |
@@ -104,7 +104,7 @@ Implementation status of all features, compared against nginx. Last updated: 202
 | Category | Total | Implemented | Partial | Planned | Out of Scope |
 |----------|-------|-------------|---------|---------|--------------|
 | Core HTTP | 7 | 7 | 0 | 0 | 0 |
-| Proxy | 9 | 2 | 0 | 7 | 0 |
+| Proxy | 9 | 3 | 0 | 6 | 0 |
 | Static | 5 | 3 | 0 | 2 | 0 |
 | Security | 5 | 1 | 0 | 4 | 0 |
 | Compression | 4 | 1 | 0 | 3 | 0 |
@@ -114,10 +114,10 @@ Implementation status of all features, compared against nginx. Last updated: 202
 | TLS | 3 | 1 | 0 | 2 | 0 |
 | Rewrite/Routing | 3 | 0 | 0 | 3 | 0 |
 | Advanced | 13 | 0 | 0 | 9 | 4 |
-| **Total** | **59** | **20** | **0** | **35** | **4** |
+| **Total** | **59** | **21** | **0** | **34** | **4** |
 
-**Completion: 34% (20/59 features)**
-**Remaining: 35 features to implement, 4 out of scope**
+**Completion: 36% (21/59 features)**
+**Remaining: 34 features to implement, 4 out of scope**
 
 ---
 
@@ -129,8 +129,8 @@ Implementation status of all features, compared against nginx. Last updated: 202
 |---|---------|--------|-----|
 | 21 | Access logging | ✅ Done | Every production server needs request logs |
 | 22 | Error logging levels | ✅ Done | Debug/Info/Warn/Error separation |
-| 26 | Proxy timeouts | ❌ Next | Without this, slow backends hang the proxy |
-| 31 | Request body size limit | ❌ | Prevents abuse (large POST uploads) |
+| 26 | Proxy timeouts | ✅ Done | Without this, slow backends hang the proxy |
+| 31 | Request body size limit | ❌ Next | Prevents abuse (large POST uploads) |
 | 33 | Request header manipulation | ❌ | Needed for custom auth headers, tracing |
 | 39 | Stub status endpoint | ❌ | Needed for monitoring (Prometheus scrape) |
 

@@ -2,7 +2,7 @@ package proxy
 
 import (
 	"crypto/tls"
-	"log"
+	"fmt"
 	"net"
 	"net/http"
 	"net/http/httputil"
@@ -16,7 +16,14 @@ type Upstream struct {
 	Proxy    *httputil.ReverseProxy
 }
 
-func NewUpstream(name string, servers []*Server, strategy string) *Upstream {
+type TimeoutConfig struct {
+	Connect int // seconds
+	Read    int // seconds
+	Send    int // seconds
+	Idle    int // seconds
+}
+
+func NewUpstream(name string, servers []*Server, strategy string, timeouts *TimeoutConfig) *Upstream {
 	var balancer Balancer
 	switch strategy {
 	case "least-conn":
@@ -25,10 +32,14 @@ func NewUpstream(name string, servers []*Server, strategy string) *Upstream {
 		balancer = NewRoundRobin(servers)
 	}
 
+	if timeouts == nil {
+		timeouts = &TimeoutConfig{Connect: 60, Read: 60, Send: 60, Idle: 90}
+	}
+
 	u := &Upstream{Name: name, Balancer: balancer}
 	u.Proxy = &httputil.ReverseProxy{
 		Director:     u.director,
-		Transport:    u.transport(),
+		Transport:    u.transport(timeouts),
 		ErrorHandler: u.ErrorHandler,
 	}
 	return u
@@ -57,15 +68,16 @@ func (u *Upstream) director(req *http.Request) {
 	}
 }
 
-func (u *Upstream) transport() *http.Transport {
+func (u *Upstream) transport(tc *TimeoutConfig) *http.Transport {
 	return &http.Transport{
 		MaxIdleConns:        100,
 		MaxIdleConnsPerHost: 10,
-		IdleConnTimeout:     90 * time.Second,
+		IdleConnTimeout:     time.Duration(tc.Idle) * time.Second,
 		DialContext: (&net.Dialer{
-			Timeout:   5 * time.Second,
+			Timeout:   time.Duration(tc.Connect) * time.Second,
 			KeepAlive: 30 * time.Second,
 		}).DialContext,
+		ResponseHeaderTimeout: time.Duration(tc.Read) * time.Second,
 		TLSClientConfig: &tls.Config{
 			InsecureSkipVerify: false,
 		},
@@ -74,7 +86,7 @@ func (u *Upstream) transport() *http.Transport {
 }
 
 func (u *Upstream) ErrorHandler(w http.ResponseWriter, r *http.Request, err error) {
-	log.Printf("upstream error: %v", err)
+	fmt.Printf("upstream error: %v\n", err)
 	http.Error(w, "Bad Gateway", http.StatusBadGateway)
 }
 

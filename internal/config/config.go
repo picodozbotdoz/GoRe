@@ -89,9 +89,41 @@ type Proxy struct {
 }
 
 type Upstream struct {
-	Strategy  string           `yaml:"strategy"`
-	Servers   []UpstreamServer `yaml:"servers"`
-	Keepalive int              `yaml:"keepalive,omitempty"`
+	Strategy        string           `yaml:"strategy"`
+	Servers         []UpstreamServer `yaml:"servers"`
+	Keepalive       int              `yaml:"keepalive,omitempty"`
+	ConnectTimeout  int              `yaml:"connect_timeout,omitempty"`
+	ReadTimeout     int              `yaml:"read_timeout,omitempty"`
+	SendTimeout     int              `yaml:"send_timeout,omitempty"`
+	IdleTimeout     int              `yaml:"idle_timeout,omitempty"`
+}
+
+func (u *Upstream) GetConnectTimeout() int {
+	if u == nil || u.ConnectTimeout == 0 {
+		return 60
+	}
+	return u.ConnectTimeout
+}
+
+func (u *Upstream) GetReadTimeout() int {
+	if u == nil || u.ReadTimeout == 0 {
+		return 60
+	}
+	return u.ReadTimeout
+}
+
+func (u *Upstream) GetSendTimeout() int {
+	if u == nil || u.SendTimeout == 0 {
+		return 60
+	}
+	return u.SendTimeout
+}
+
+func (u *Upstream) GetIdleTimeout() int {
+	if u == nil || u.IdleTimeout == 0 {
+		return 90
+	}
+	return u.IdleTimeout
 }
 
 type UpstreamServer struct {
