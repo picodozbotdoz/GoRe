@@ -28,7 +28,7 @@ type TimeoutConfig struct {
 	Keepalive int // max idle connections per upstream host
 }
 
-func NewUpstream(name string, servers []*Server, strategy string, timeouts *TimeoutConfig, setHeaders map[string]string) *Upstream {
+func NewUpstream(name string, servers []*Server, strategy string, timeouts *TimeoutConfig, setHeaders map[string]string, buffered bool) *Upstream {
 	var balancer Balancer
 	switch strategy {
 	case "least-conn":
@@ -46,6 +46,9 @@ func NewUpstream(name string, servers []*Server, strategy string, timeouts *Time
 		Director:     u.director,
 		Transport:    u.transport(timeouts),
 		ErrorHandler: u.ErrorHandler,
+	}
+	if !buffered {
+		u.Proxy.FlushInterval = -1
 	}
 	return u
 }

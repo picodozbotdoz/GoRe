@@ -96,6 +96,7 @@ type Rewrite struct {
 
 type Proxy struct {
 	Upstream   string `yaml:"upstream"`
+	Buffering  *bool  `yaml:"buffering,omitempty"`
 	BufferSize string `yaml:"buffer_size,omitempty"`
 }
 
@@ -103,11 +104,19 @@ type Upstream struct {
 	Strategy        string            `yaml:"strategy"`
 	Servers         []UpstreamServer  `yaml:"servers"`
 	SetHeaders      map[string]string `yaml:"set_headers,omitempty"`
+	Buffering       *bool             `yaml:"buffering,omitempty"`
 	Keepalive       int               `yaml:"keepalive,omitempty"`
 	ConnectTimeout  int               `yaml:"connect_timeout,omitempty"`
 	ReadTimeout     int               `yaml:"read_timeout,omitempty"`
 	SendTimeout     int               `yaml:"send_timeout,omitempty"`
 	IdleTimeout     int               `yaml:"idle_timeout,omitempty"`
+}
+
+func (u *Upstream) GetBuffering() bool {
+	if u == nil || u.Buffering == nil {
+		return true
+	}
+	return *u.Buffering
 }
 
 func (u *Upstream) GetConnectTimeout() int {
