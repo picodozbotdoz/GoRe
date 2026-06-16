@@ -9,6 +9,7 @@ import (
 	"github.com/user/gore/internal/modules/bodylimit"
 	"github.com/user/gore/internal/modules/gzip"
 	"github.com/user/gore/internal/modules/headers"
+	"github.com/user/gore/internal/modules/limitconn"
 	"github.com/user/gore/internal/modules/ratelimit"
 )
 
@@ -45,6 +46,10 @@ func BuildChain(cfg *config.ModulesConfig, next http.Handler) http.Handler {
 	if cfg.ClientMaxBodySize != "" {
 		maxBytes := config.ParseSize(cfg.ClientMaxBodySize)
 		handler = bodylimit.New(maxBytes)(handler)
+	}
+
+	if cfg.LimitConn != nil && cfg.LimitConn.Connections > 0 {
+		handler = limitconn.New(cfg.LimitConn.Connections).ServeHTTP(handler)
 	}
 
 	handler = log.AccessMiddleware(
