@@ -6,6 +6,7 @@ import (
 	"github.com/user/gore/internal/config"
 	"github.com/user/gore/internal/log"
 	"github.com/user/gore/internal/modules/access"
+	"github.com/user/gore/internal/modules/bodylimit"
 	"github.com/user/gore/internal/modules/gzip"
 	"github.com/user/gore/internal/modules/headers"
 	"github.com/user/gore/internal/modules/ratelimit"
@@ -39,6 +40,11 @@ func BuildChain(cfg *config.ModulesConfig, next http.Handler) http.Handler {
 			}
 		}
 		handler = access.New(rules).ServeHTTP(handler)
+	}
+
+	if cfg.ClientMaxBodySize != "" {
+		maxBytes := config.ParseSize(cfg.ClientMaxBodySize)
+		handler = bodylimit.New(maxBytes)(handler)
 	}
 
 	handler = log.AccessMiddleware(

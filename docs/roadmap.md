@@ -53,7 +53,7 @@ Implementation status of all features, compared against nginx. Last updated: 202
 | 28 | Proxy retry | `proxy_next_upstream` | ❌ | Medium | Retry on next upstream on failure |
 | 29 | Active health checks | `health_check` | ❌ | Large | Periodic backend health probing |
 | 30 | Upstream keepalive | `keepalive` in upstream | ❌ | Small | Configurable connection pool to backends |
-| 31 | Request body size limit | `client_max_body_size` | ❌ | Small | Reject requests larger than limit |
+| 31 | Request body size limit | `client_max_body_size` | ✅ | — | Reject requests larger than limit |
 | 32 | Concurrent connection limit | `limit_conn` | ❌ | Medium | Per-IP connection count limit |
 | 33 | Request header manipulation | `proxy_set_header` | ❌ | Small | Set/add/remove headers on proxied request |
 | 34 | ETag generation | Automatic | ❌ | Small | Generate ETag for static files |
@@ -109,15 +109,15 @@ Implementation status of all features, compared against nginx. Last updated: 202
 | Security | 5 | 1 | 0 | 4 | 0 |
 | Compression | 4 | 1 | 0 | 3 | 0 |
 | Headers | 3 | 2 | 0 | 1 | 0 |
-| Limits | 3 | 1 | 0 | 2 | 0 |
+| Limits | 3 | 2 | 0 | 1 | 0 |
 | Logging | 4 | 2 | 0 | 2 | 0 |
 | TLS | 3 | 1 | 0 | 2 | 0 |
 | Rewrite/Routing | 3 | 0 | 0 | 3 | 0 |
 | Advanced | 13 | 0 | 0 | 9 | 4 |
-| **Total** | **59** | **21** | **0** | **34** | **4** |
+| **Total** | **59** | **22** | **0** | **33** | **4** |
 
-**Completion: 36% (21/59 features)**
-**Remaining: 34 features to implement, 4 out of scope**
+**Completion: 37% (22/59 features)**
+**Remaining: 33 features to implement, 4 out of scope**
 
 ---
 
@@ -130,8 +130,8 @@ Implementation status of all features, compared against nginx. Last updated: 202
 | 21 | Access logging | ✅ Done | Every production server needs request logs |
 | 22 | Error logging levels | ✅ Done | Debug/Info/Warn/Error separation |
 | 26 | Proxy timeouts | ✅ Done | Without this, slow backends hang the proxy |
-| 31 | Request body size limit | ❌ Next | Prevents abuse (large POST uploads) |
-| 33 | Request header manipulation | ❌ | Needed for custom auth headers, tracing |
+| 31 | Request body size limit | ✅ Done | Prevents abuse (large POST uploads) |
+| 33 | Request header manipulation | ❌ Next | Needed for custom auth headers, tracing |
 | 39 | Stub status endpoint | ❌ | Needed for monitoring (Prometheus scrape) |
 
 ### Phase 2 — Core Completeness
