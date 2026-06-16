@@ -71,7 +71,7 @@ Implementation status of all features, compared against nginx. Last updated: 202
 |---|---------|-----------------|--------|--------|-------------|
 | 40 | Content replacement | `sub_filter` | ✅ | — | Replace strings in response body |
 | 41 | Server Side Includes | `ssi` | ❌ | Large | Parse SSI directives in HTML |
-| 42 | Proxy cache | `proxy_cache` | ❌ | Large | Cache upstream responses on disk |
+| 42 | Proxy cache | `proxy_cache` | ✅ | — | Cache upstream responses on disk |
 | 43 | Brotli compression | `brotli` | ✅ | — | Brotli compression middleware |
 | 44 | Gunzip (decompress) | `gunzip` | ❌ | Small | Decompress upstream for old clients |
 | 45 | WebDAV | `dav_methods` | ❌ | Large | PUT, DELETE, MKCOL, COPY, MOVE |
@@ -114,10 +114,10 @@ Implementation status of all features, compared against nginx. Last updated: 202
 | TLS | 3 | 1 | 0 | 2 | 0 |
 | Rewrite/Routing | 3 | 2 | 0 | 1 | 0 |
 | Advanced | 13 | 0 | 0 | 9 | 4 |
-| **Total** | **59** | **43** | **0** | **12** | **4** |
+| **Total** | **59** | **44** | **0** | **11** | **4** |
 
-**Completion: 73% (43/59 features)**
-**Remaining: 12 features to implement, 4 out of scope**
+**Completion: 75% (44/59 features)**
+**Remaining: 11 features to implement, 4 out of scope**
 
 ---
 

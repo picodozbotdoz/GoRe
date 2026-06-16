@@ -11,6 +11,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/user/gore/internal/proxy/cache"
 )
 
 type Upstream struct {
@@ -19,6 +21,7 @@ type Upstream struct {
 	Proxy      *httputil.ReverseProxy
 	SetHeaders map[string]string
 	MaxRetries int
+	Cache      *cache.Cache
 }
 
 type TimeoutConfig struct {
@@ -105,6 +108,21 @@ func (u *Upstream) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if u.Cache != nil && r.Method == http.MethodGet {
+		key := u.Cache.Key(r)
+		if entry, ok := u.Cache.Get(key); ok {
+			for k, vv := range entry.Header {
+				for _, v := range vv {
+					w.Header().Add(k, v)
+				}
+			}
+			w.Header().Set("X-Cache", "HIT")
+			w.WriteHeader(entry.Status)
+			w.Write(entry.Body)
+			return
+		}
+	}
+
 	maxAttempts := u.MaxRetries + 1
 	var lastErr error
 
@@ -119,8 +137,24 @@ func (u *Upstream) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 
-		rec := &retryResponseWriter{ResponseWriter: w, statusCode: 200}
-		u.Proxy.ServeHTTP(rec, r)
+		var rec *retryResponseWriter
+		if u.Cache != nil && r.Method == http.MethodGet {
+			ccw := &cacheCaptureWriter{ResponseWriter: w}
+			rec = &retryResponseWriter{ResponseWriter: ccw, statusCode: 200}
+			u.Proxy.ServeHTTP(rec, r)
+			if rec.statusCode == 200 {
+				entry := &cache.Entry{
+					Status: rec.statusCode,
+					Header: ccw.header,
+					Body:   ccw.body,
+				}
+				u.Cache.Set(u.Cache.Key(r), entry)
+				w.Header().Set("X-Cache", "MISS")
+			}
+		} else {
+			rec = &retryResponseWriter{ResponseWriter: w, statusCode: 200}
+			u.Proxy.ServeHTTP(rec, r)
+		}
 
 		if rec.statusCode >= 500 && rec.statusCode < 600 && attempt < u.MaxRetries {
 			lastErr = fmt.Errorf("upstream returned %d", rec.statusCode)
@@ -138,6 +172,42 @@ type retryResponseWriter struct {
 	http.ResponseWriter
 	statusCode int
 	written    bool
+}
+
+type cacheCaptureWriter struct {
+	http.ResponseWriter
+	header      http.Header
+	body        []byte
+	status      int
+	headerReady bool
+}
+
+func (ccw *cacheCaptureWriter) Header() http.Header {
+	if ccw.header == nil {
+		ccw.header = make(http.Header)
+	}
+	return ccw.header
+}
+
+func (ccw *cacheCaptureWriter) WriteHeader(code int) {
+	ccw.status = code
+	realH := ccw.ResponseWriter.Header()
+	for k, vv := range ccw.header {
+		for _, v := range vv {
+			realH.Add(k, v)
+		}
+	}
+	ccw.ResponseWriter.WriteHeader(code)
+}
+
+func (ccw *cacheCaptureWriter) Write(b []byte) (int, error) {
+	ccw.body = append(ccw.body, b...)
+	n, err := ccw.ResponseWriter.Write(b)
+	return n, err
+}
+
+func (ccw *cacheCaptureWriter) Unwrap() http.ResponseWriter {
+	return ccw.ResponseWriter
 }
 
 func (rw *retryResponseWriter) WriteHeader(code int) {

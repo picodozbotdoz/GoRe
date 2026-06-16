@@ -112,6 +112,7 @@ type Upstream struct {
 	Buffering       *bool             `yaml:"buffering,omitempty"`
 	Retries         int               `yaml:"retries,omitempty"`
 	HealthCheck     *HealthCheckConfig `yaml:"health_check,omitempty"`
+	Cache           *CacheConfig       `yaml:"cache,omitempty"`
 	Keepalive       int               `yaml:"keepalive,omitempty"`
 	ConnectTimeout  int               `yaml:"connect_timeout,omitempty"`
 	ReadTimeout     int               `yaml:"read_timeout,omitempty"`
@@ -123,6 +124,12 @@ type HealthCheckConfig struct {
 	Enabled  bool   `yaml:"enabled"`
 	Interval int    `yaml:"interval,omitempty"`
 	Path     string `yaml:"path,omitempty"`
+}
+
+type CacheConfig struct {
+	Enabled bool `yaml:"enabled"`
+	TTL     int  `yaml:"ttl,omitempty"`
+	MaxSize int  `yaml:"max_size,omitempty"`
 }
 
 func (h *HealthCheckConfig) GetInterval() int {
