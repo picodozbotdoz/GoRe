@@ -78,13 +78,14 @@ type Server struct {
 }
 
 type Location struct {
-	Path        string    `yaml:"path"`
-	Root        string    `yaml:"root,omitempty"`
-	Proxy       *Proxy    `yaml:"proxy,omitempty"`
-	Return      string    `yaml:"return,omitempty"`
-	Rewrite     *Rewrite  `yaml:"rewrite,omitempty"`
-	Autoindex   *bool     `yaml:"autoindex,omitempty"`
-	CacheControl string   `yaml:"cache_control,omitempty"`
+	Path         string    `yaml:"path"`
+	Root         string    `yaml:"root,omitempty"`
+	Proxy        *Proxy    `yaml:"proxy,omitempty"`
+	Return       string    `yaml:"return,omitempty"`
+	Rewrite      *Rewrite  `yaml:"rewrite,omitempty"`
+	Autoindex    *bool     `yaml:"autoindex,omitempty"`
+	CacheControl string    `yaml:"cache_control,omitempty"`
+	TryFiles     []string  `yaml:"try_files,omitempty"`
 }
 
 type Rewrite struct {

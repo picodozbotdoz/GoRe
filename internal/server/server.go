@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"os"
+	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
@@ -81,6 +83,53 @@ func (s *Server) buildLocationHandler(loc config.Location) http.Handler {
 		if upstream, ok := s.upstreams[loc.Proxy.Upstream]; ok {
 			handler = upstream
 		}
+	} else if loc.Root != "" && len(loc.TryFiles) > 0 {
+		autoindex := false
+		if loc.Autoindex != nil {
+			autoindex = *loc.Autoindex
+		}
+		prefix := loc.Path
+		root := loc.Root
+		files := loc.TryFiles
+		handler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			uri := r.URL.Path[len(prefix):]
+			if uri == "" {
+				uri = "/"
+			}
+			for i, f := range files {
+				if strings.HasPrefix(f, "=") {
+					code, _ := strconv.Atoi(f[1:])
+					http.Error(w, http.StatusText(code), code)
+					return
+				}
+				candidate := strings.Replace(f, "$uri", uri, 1)
+				fullPath := filepath.Join(root, candidate)
+				if info, err := os.Stat(fullPath); err == nil && !info.IsDir() {
+					r2 := r.Clone(r.Context())
+					r2.URL.Path = candidate
+					static.NewWithCache(root, autoindex, loc.CacheControl).ServeHTTP(w, r2)
+					return
+				}
+				if info, err := os.Stat(fullPath); err == nil && info.IsDir() {
+					indexPath := filepath.Join(fullPath, "index.html")
+					if _, err := os.Stat(indexPath); err == nil {
+						r2 := r.Clone(r.Context())
+						r2.URL.Path = candidate + "/index.html"
+						static.NewWithCache(root, autoindex, loc.CacheControl).ServeHTTP(w, r2)
+						return
+					}
+				}
+				if i == len(files)-1 {
+					if strings.HasPrefix(f, "/") {
+						http.Redirect(w, r, f, http.StatusFound)
+					} else {
+						http.NotFound(w, r)
+					}
+					return
+				}
+			}
+			http.NotFound(w, r)
+		})
 	} else if loc.Root != "" {
 		autoindex := false
 		if loc.Autoindex != nil {

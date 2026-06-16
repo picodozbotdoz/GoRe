@@ -46,7 +46,7 @@ Implementation status of all features, compared against nginx. Last updated: 202
 | 21 | Access logging | `access_log` | ✅ | — | Log request method, path, status, latency, client IP |
 | 22 | Error logging levels | `error_log` | ✅ | — | Replace `log.Printf` with leveled logger |
 | 23 | URL rewrite rules | `rewrite` | ✅ | — | Regex-based URL rewriting with flags (permanent/temporary) |
-| 24 | `try_files` | `try_files` | ❌ | Medium | Fallback chain: `$uri $uri/ =404` |
+| 24 | `try_files` | `try_files` | ✅ | — | Fallback chain: `$uri $uri/ =404` |
 | 25 | WebSocket upgrade | `proxy_pass` + Upgrade | ✅ | — | Handle `Upgrade: websocket` header, bidirectional streaming |
 | 26 | Proxy timeouts | `proxy_connect_timeout`, `proxy_read_timeout` | ✅ | — | Per-location timeout configuration |
 | 27 | Proxy buffering | `proxy_buffering`, `proxy_buffer_size` | ❌ | Small | Buffer upstream response before sending to client |
@@ -112,12 +112,12 @@ Implementation status of all features, compared against nginx. Last updated: 202
 | Limits | 3 | 3 | 0 | 0 | 0 |
 | Logging | 4 | 2 | 0 | 2 | 0 |
 | TLS | 3 | 1 | 0 | 2 | 0 |
-| Rewrite/Routing | 3 | 1 | 0 | 2 | 0 |
+| Rewrite/Routing | 3 | 2 | 0 | 1 | 0 |
 | Advanced | 13 | 0 | 0 | 9 | 4 |
-| **Total** | **59** | **32** | **0** | **23** | **4** |
+| **Total** | **59** | **33** | **0** | **22** | **4** |
 
-**Completion: 54% (32/59 features)**
-**Remaining: 23 features to implement, 4 out of scope**
+**Completion: 56% (33/59 features)**
+**Remaining: 22 features to implement, 4 out of scope**
 
 ---
 
@@ -151,8 +151,8 @@ Implementation status of all features, compared against nginx. Last updated: 202
 | # | Feature | Status | Why |
 |---|---------|--------|-----|
 | 36 | HTTP Basic Auth | ✅ Done | Simple auth for admin panels |
-| 24 | try_files | ❌ Next | Elegant fallback chain for SPAs |
-| 27 | Proxy buffering | ❌ | Control memory usage for large responses |
+| 24 | try_files | ✅ Done | Elegant fallback chain for SPAs |
+| 27 | Proxy buffering | ❌ Next | Control memory usage for large responses |
 | 28 | Proxy retry | ❌ | Improve availability with automatic failover |
 | 37 | Auth subrequest | ❌ | External auth service delegation |
 | 38 | TLS cipher config | ❌ | Security hardening |
