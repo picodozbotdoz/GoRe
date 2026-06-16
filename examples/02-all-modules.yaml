@@ -1,0 +1,47 @@
+listen:
+  - addr: ":8080"
+
+modules:
+  gzip:
+    enabled: true
+    level: 6
+    types:
+      - text/
+      - application/json
+      - application/javascript
+  headers:
+    add:
+      X-Frame-Options: DENY
+      X-Content-Type-Options: nosniff
+    remove:
+      - X-Powered-By
+  rate_limit:
+    zone: global
+    rate: "100/s"
+    burst: 200
+  access:
+    rules:
+      - deny: 10.0.0.0/8
+
+upstreams:
+  backend:
+    strategy: round-robin
+    servers:
+      - addr: 127.0.0.1:3000
+      - addr: 127.0.0.1:3001
+
+http:
+  server:
+    - locations:
+        - path: /api/
+          proxy:
+            upstream: backend
+        - path: /static/
+          root: /var/www/static
+          autoindex: true
+        - path: /health
+          return: "200 'OK'"
+        - path: /old
+          return: "301 /new"
+        - path: /
+          root: /var/www/html

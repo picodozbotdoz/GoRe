@@ -1,0 +1,10 @@
+listen:
+  - addr: ":8080"
+
+http:
+  server:
+    - locations:
+        - path: /health
+          return: "200 'OK'"
+        - path: /
+          root: /var/www/html

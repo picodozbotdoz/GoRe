@@ -1,0 +1,38 @@
+listen:
+  - addr: ":443"
+    tls:
+      cert: /etc/ssl/certs/server.pem
+      key: /etc/ssl/private/server.key
+    http2:
+      enabled: true
+      max_concurrent_streams: 250
+    http3:
+      enabled: true
+      max_streams: 100
+      idle_timeout: 30
+
+upstreams:
+  app:
+    strategy: round-robin
+    servers:
+      - addr: 127.0.0.1:3000
+      - addr: 127.0.0.1:3001
+
+modules:
+  gzip:
+    enabled: true
+    level: 6
+  headers:
+    add:
+      Strict-Transport-Security: "max-age=31536000"
+
+http:
+  server:
+    - locations:
+        - path: /api/
+          proxy:
+            upstream: app
+        - path: /health
+          return: "200 'OK'"
+        - path: /
+          root: /var/www/html
