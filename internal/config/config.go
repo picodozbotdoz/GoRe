@@ -192,12 +192,19 @@ type ModulesConfig struct {
 	RealIP            *RealIPConfig    `yaml:"real_ip,omitempty"`
 	BasicAuth         *BasicAuthConfig `yaml:"basic_auth,omitempty"`
 	Map               []MapConfig      `yaml:"map,omitempty"`
+	SplitClients      []SplitConfig    `yaml:"split_clients,omitempty"`
 }
 
-type BrotliConfig struct {
-	Enabled bool     `yaml:"enabled"`
-	Level   int      `yaml:"level,omitempty"`
-	Types   []string `yaml:"types,omitempty"`
+type SplitConfig struct {
+	Source  string      `yaml:"source"`
+	Target  string      `yaml:"target"`
+	Rules   []SplitRule `yaml:"rules"`
+	Default string      `yaml:"default"`
+}
+
+type SplitRule struct {
+	Percent float64 `yaml:"percent"`
+	Value   string  `yaml:"value"`
 }
 
 type MapConfig struct {
@@ -263,6 +270,12 @@ func ParseSize(s string) int64 {
 }
 
 type GzipConfig struct {
+	Enabled bool     `yaml:"enabled"`
+	Level   int      `yaml:"level,omitempty"`
+	Types   []string `yaml:"types,omitempty"`
+}
+
+type BrotliConfig struct {
 	Enabled bool     `yaml:"enabled"`
 	Level   int      `yaml:"level,omitempty"`
 	Types   []string `yaml:"types,omitempty"`

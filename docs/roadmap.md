@@ -77,7 +77,7 @@ Implementation status of all features, compared against nginx. Last updated: 202
 | 45 | WebDAV | `dav_methods` | ❌ | Large | PUT, DELETE, MKCOL, COPY, MOVE |
 | 46 | GeoIP | `geoip` | ❌ | Medium | IP-to-country lookup |
 | 47 | Map directive | `map` | ✅ | — | Variable mapping based on conditions |
-| 48 | Split clients | `split_clients` | ❌ | Small | A/B testing by IP/header hash |
+| 48 | Split clients | `split_clients` | ✅ | — | A/B testing by IP/header hash |
 | 49 | Traffic mirroring | `mirror` | ❌ | Medium | Clone requests to shadow backend |
 | 50 | Real IP extraction | `real_ip` | ✅ | — | Parse X-Forwarded-For for client IP |
 | 51 | TCP/UDP stream proxy | `stream` | ❌ | Large | L4 proxy (no HTTP parsing) |
@@ -114,10 +114,10 @@ Implementation status of all features, compared against nginx. Last updated: 202
 | TLS | 3 | 1 | 0 | 2 | 0 |
 | Rewrite/Routing | 3 | 2 | 0 | 1 | 0 |
 | Advanced | 13 | 0 | 0 | 9 | 4 |
-| **Total** | **59** | **41** | **0** | **14** | **4** |
+| **Total** | **59** | **42** | **0** | **13** | **4** |
 
-**Completion: 69% (41/59 features)**
-**Remaining: 14 features to implement, 4 out of scope**
+**Completion: 71% (42/59 features)**
+**Remaining: 13 features to implement, 4 out of scope**
 
 ---
 
@@ -165,5 +165,5 @@ Implementation status of all features, compared against nginx. Last updated: 202
 | 40 | Content replacement | ✅ Done | Response body rewriting |
 | 43 | Brotli compression | ✅ Done | Better compression than gzip |
 | 47 | Map directive | ✅ Done | Variable-based config flexibility |
-| 48 | Split clients | ❌ Next | A/B testing |
-| 49 | Traffic mirroring | ❌ | Safe deployment testing |
+| 48 | Split clients | ✅ Done | A/B testing |
+| 49 | Traffic mirroring | ❌ Next | Safe deployment testing |

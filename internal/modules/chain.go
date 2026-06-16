@@ -15,6 +15,7 @@ import (
 	"github.com/user/gore/internal/modules/mapmodule"
 	"github.com/user/gore/internal/modules/ratelimit"
 	"github.com/user/gore/internal/modules/realip"
+	"github.com/user/gore/internal/modules/split"
 )
 
 func BuildChain(cfg *config.ModulesConfig, next http.Handler) http.Handler {
@@ -66,6 +67,10 @@ func BuildChain(cfg *config.ModulesConfig, next http.Handler) http.Handler {
 
 	if len(cfg.Map) > 0 {
 		handler = mapmodule.New(cfg.Map)(handler)
+	}
+
+	if len(cfg.SplitClients) > 0 {
+		handler = split.New(cfg.SplitClients)(handler)
 	}
 
 	if cfg.BasicAuth != nil && len(cfg.BasicAuth.Users) > 0 {
