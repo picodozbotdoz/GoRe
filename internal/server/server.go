@@ -55,7 +55,7 @@ func (s *Server) initUpstreams() {
 			Read:    upstreamCfg.GetReadTimeout(),
 			Send:    upstreamCfg.GetSendTimeout(),
 			Idle:    upstreamCfg.GetIdleTimeout(),
-		})
+		}, upstreamCfg.SetHeaders)
 	}
 }
 

@@ -11,9 +11,10 @@ import (
 )
 
 type Upstream struct {
-	Name     string
-	Balancer Balancer
-	Proxy    *httputil.ReverseProxy
+	Name       string
+	Balancer   Balancer
+	Proxy      *httputil.ReverseProxy
+	SetHeaders map[string]string
 }
 
 type TimeoutConfig struct {
@@ -23,7 +24,7 @@ type TimeoutConfig struct {
 	Idle    int // seconds
 }
 
-func NewUpstream(name string, servers []*Server, strategy string, timeouts *TimeoutConfig) *Upstream {
+func NewUpstream(name string, servers []*Server, strategy string, timeouts *TimeoutConfig, setHeaders map[string]string) *Upstream {
 	var balancer Balancer
 	switch strategy {
 	case "least-conn":
@@ -36,7 +37,7 @@ func NewUpstream(name string, servers []*Server, strategy string, timeouts *Time
 		timeouts = &TimeoutConfig{Connect: 60, Read: 60, Send: 60, Idle: 90}
 	}
 
-	u := &Upstream{Name: name, Balancer: balancer}
+	u := &Upstream{Name: name, Balancer: balancer, SetHeaders: setHeaders}
 	u.Proxy = &httputil.ReverseProxy{
 		Director:     u.director,
 		Transport:    u.transport(timeouts),
@@ -59,12 +60,8 @@ func (u *Upstream) director(req *http.Request) {
 	req.URL.Scheme = target.Scheme
 	req.URL.Host = target.Host
 
-	req.Header.Set("X-Forwarded-For", req.RemoteAddr)
-	req.Header.Set("X-Forwarded-Host", req.Host)
-	req.Header.Set("X-Forwarded-Proto", "http")
-
-	if req.TLS != nil {
-		req.Header.Set("X-Forwarded-Proto", "https")
+	for k, v := range u.SetHeaders {
+		req.Header.Set(k, v)
 	}
 }
 

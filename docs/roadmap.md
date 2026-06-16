@@ -55,7 +55,7 @@ Implementation status of all features, compared against nginx. Last updated: 202
 | 30 | Upstream keepalive | `keepalive` in upstream | ❌ | Small | Configurable connection pool to backends |
 | 31 | Request body size limit | `client_max_body_size` | ✅ | — | Reject requests larger than limit |
 | 32 | Concurrent connection limit | `limit_conn` | ❌ | Medium | Per-IP connection count limit |
-| 33 | Request header manipulation | `proxy_set_header` | ❌ | Small | Set/add/remove headers on proxied request |
+| 33 | Request header manipulation | `proxy_set_header` | ✅ | — | Set/add/remove headers on proxied request |
 | 34 | ETag generation | Automatic | ❌ | Small | Generate ETag for static files |
 | 35 | Cache-Control headers | `expires` | ❌ | Small | Configurable cache headers per location |
 | 36 | HTTP Basic Auth | `auth_basic` | ❌ | Medium | Username/password authentication |
@@ -104,7 +104,7 @@ Implementation status of all features, compared against nginx. Last updated: 202
 | Category | Total | Implemented | Partial | Planned | Out of Scope |
 |----------|-------|-------------|---------|---------|--------------|
 | Core HTTP | 7 | 7 | 0 | 0 | 0 |
-| Proxy | 9 | 3 | 0 | 6 | 0 |
+| Proxy | 9 | 4 | 0 | 5 | 0 |
 | Static | 5 | 3 | 0 | 2 | 0 |
 | Security | 5 | 1 | 0 | 4 | 0 |
 | Compression | 4 | 1 | 0 | 3 | 0 |
@@ -114,10 +114,10 @@ Implementation status of all features, compared against nginx. Last updated: 202
 | TLS | 3 | 1 | 0 | 2 | 0 |
 | Rewrite/Routing | 3 | 0 | 0 | 3 | 0 |
 | Advanced | 13 | 0 | 0 | 9 | 4 |
-| **Total** | **59** | **22** | **0** | **33** | **4** |
+| **Total** | **59** | **23** | **0** | **32** | **4** |
 
-**Completion: 37% (22/59 features)**
-**Remaining: 33 features to implement, 4 out of scope**
+**Completion: 39% (23/59 features)**
+**Remaining: 32 features to implement, 4 out of scope**
 
 ---
 
@@ -131,8 +131,8 @@ Implementation status of all features, compared against nginx. Last updated: 202
 | 22 | Error logging levels | ✅ Done | Debug/Info/Warn/Error separation |
 | 26 | Proxy timeouts | ✅ Done | Without this, slow backends hang the proxy |
 | 31 | Request body size limit | ✅ Done | Prevents abuse (large POST uploads) |
-| 33 | Request header manipulation | ❌ Next | Needed for custom auth headers, tracing |
-| 39 | Stub status endpoint | ❌ | Needed for monitoring (Prometheus scrape) |
+| 33 | Request header manipulation | ✅ Done | Needed for custom auth headers, tracing |
+| 39 | Stub status endpoint | ❌ Next | Needed for monitoring (Prometheus scrape) |
 
 ### Phase 2 — Core Completeness
 

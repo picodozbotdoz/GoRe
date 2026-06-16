@@ -91,13 +91,14 @@ type Proxy struct {
 }
 
 type Upstream struct {
-	Strategy        string           `yaml:"strategy"`
-	Servers         []UpstreamServer `yaml:"servers"`
-	Keepalive       int              `yaml:"keepalive,omitempty"`
-	ConnectTimeout  int              `yaml:"connect_timeout,omitempty"`
-	ReadTimeout     int              `yaml:"read_timeout,omitempty"`
-	SendTimeout     int              `yaml:"send_timeout,omitempty"`
-	IdleTimeout     int              `yaml:"idle_timeout,omitempty"`
+	Strategy        string            `yaml:"strategy"`
+	Servers         []UpstreamServer  `yaml:"servers"`
+	SetHeaders      map[string]string `yaml:"set_headers,omitempty"`
+	Keepalive       int               `yaml:"keepalive,omitempty"`
+	ConnectTimeout  int               `yaml:"connect_timeout,omitempty"`
+	ReadTimeout     int               `yaml:"read_timeout,omitempty"`
+	SendTimeout     int               `yaml:"send_timeout,omitempty"`
+	IdleTimeout     int               `yaml:"idle_timeout,omitempty"`
 }
 
 func (u *Upstream) GetConnectTimeout() int {
