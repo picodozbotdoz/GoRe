@@ -78,7 +78,7 @@ Implementation status of all features, compared against nginx. Last updated: 202
 | 46 | GeoIP | `geoip` | ❌ | Medium | IP-to-country lookup |
 | 47 | Map directive | `map` | ✅ | — | Variable mapping based on conditions |
 | 48 | Split clients | `split_clients` | ✅ | — | A/B testing by IP/header hash |
-| 49 | Traffic mirroring | `mirror` | ❌ | Medium | Clone requests to shadow backend |
+| 49 | Traffic mirroring | `mirror` | ✅ | — | Clone requests to shadow backend |
 | 50 | Real IP extraction | `real_ip` | ✅ | — | Parse X-Forwarded-For for client IP |
 | 51 | TCP/UDP stream proxy | `stream` | ❌ | Large | L4 proxy (no HTTP parsing) |
 | 52 | Mail proxy | `mail` | ❌ | Large | IMAP/POP3/SMTP proxy |
@@ -114,10 +114,10 @@ Implementation status of all features, compared against nginx. Last updated: 202
 | TLS | 3 | 1 | 0 | 2 | 0 |
 | Rewrite/Routing | 3 | 2 | 0 | 1 | 0 |
 | Advanced | 13 | 0 | 0 | 9 | 4 |
-| **Total** | **59** | **42** | **0** | **13** | **4** |
+| **Total** | **59** | **43** | **0** | **12** | **4** |
 
-**Completion: 71% (42/59 features)**
-**Remaining: 13 features to implement, 4 out of scope**
+**Completion: 73% (43/59 features)**
+**Remaining: 12 features to implement, 4 out of scope**
 
 ---
 
@@ -166,4 +166,4 @@ Implementation status of all features, compared against nginx. Last updated: 202
 | 43 | Brotli compression | ✅ Done | Better compression than gzip |
 | 47 | Map directive | ✅ Done | Variable-based config flexibility |
 | 48 | Split clients | ✅ Done | A/B testing |
-| 49 | Traffic mirroring | ❌ Next | Safe deployment testing |
+| 49 | Traffic mirroring | ✅ Done | Safe deployment testing |

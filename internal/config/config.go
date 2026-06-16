@@ -90,6 +90,7 @@ type Location struct {
 	TryFiles     []string          `yaml:"try_files,omitempty"`
 	AuthRequest  string            `yaml:"auth_request,omitempty"`
 	SubFilter    map[string]string `yaml:"sub_filter,omitempty"`
+	Mirror       string            `yaml:"mirror,omitempty"`
 }
 
 type Rewrite struct {

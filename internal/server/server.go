@@ -22,6 +22,7 @@ import (
 	gorelog 	"github.com/user/gore/internal/log"
 	"github.com/user/gore/internal/modules"
 	"github.com/user/gore/internal/modules/authrequest"
+	"github.com/user/gore/internal/modules/mirror"
 	"github.com/user/gore/internal/modules/static"
 	"github.com/user/gore/internal/modules/subfilter"
 	"github.com/user/gore/internal/modules/status"
@@ -195,6 +196,9 @@ func (s *Server) buildLocationHandler(loc config.Location) http.Handler {
 	}
 	if len(loc.SubFilter) > 0 {
 		handler = subfilter.New(loc.SubFilter)(handler)
+	}
+	if loc.Mirror != "" {
+		handler = mirror.New(loc.Mirror)(handler)
 	}
 	return modules.BuildChain(&s.cfg.Modules, handler)
 }
