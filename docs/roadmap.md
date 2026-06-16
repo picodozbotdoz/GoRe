@@ -69,7 +69,7 @@ Implementation status of all features, compared against nginx. Last updated: 202
 
 | # | Feature | nginx Equivalent | Status | Effort | Description |
 |---|---------|-----------------|--------|--------|-------------|
-| 40 | Content replacement | `sub_filter` | ❌ | Medium | Replace strings in response body |
+| 40 | Content replacement | `sub_filter` | ✅ | — | Replace strings in response body |
 | 41 | Server Side Includes | `ssi` | ❌ | Large | Parse SSI directives in HTML |
 | 42 | Proxy cache | `proxy_cache` | ❌ | Large | Cache upstream responses on disk |
 | 43 | Brotli compression | `brotli` | ❌ | Medium | Brotli compression middleware |
@@ -114,10 +114,10 @@ Implementation status of all features, compared against nginx. Last updated: 202
 | TLS | 3 | 1 | 0 | 2 | 0 |
 | Rewrite/Routing | 3 | 2 | 0 | 1 | 0 |
 | Advanced | 13 | 0 | 0 | 9 | 4 |
-| **Total** | **59** | **38** | **0** | **17** | **4** |
+| **Total** | **59** | **39** | **0** | **16** | **4** |
 
-**Completion: 64% (38/59 features)**
-**Remaining: 17 features to implement, 4 out of scope**
+**Completion: 66% (39/59 features)**
+**Remaining: 16 features to implement, 4 out of scope**
 
 ---
 
@@ -162,8 +162,8 @@ Implementation status of all features, compared against nginx. Last updated: 202
 | # | Feature | Status | Why |
 |---|---------|--------|-----|
 | 29 | Active health checks | ✅ Done | Automatic backend failover |
-| 40 | Content replacement | ❌ Next | Response body rewriting |
-| 43 | Brotli compression | ❌ | Better compression than gzip |
+| 40 | Content replacement | ✅ Done | Response body rewriting |
+| 43 | Brotli compression | ❌ Next | Better compression than gzip |
 | 47 | Map directive | ❌ | Variable-based config flexibility |
 | 48 | Split clients | ❌ | A/B testing |
 | 49 | Traffic mirroring | ❌ | Safe deployment testing |

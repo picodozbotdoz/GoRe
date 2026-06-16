@@ -23,6 +23,7 @@ import (
 	"github.com/user/gore/internal/modules"
 	"github.com/user/gore/internal/modules/authrequest"
 	"github.com/user/gore/internal/modules/static"
+	"github.com/user/gore/internal/modules/subfilter"
 	"github.com/user/gore/internal/modules/status"
 	"github.com/user/gore/internal/proxy"
 	"github.com/user/gore/internal/router"
@@ -191,6 +192,9 @@ func (s *Server) buildLocationHandler(loc config.Location) http.Handler {
 	}
 	if loc.AuthRequest != "" {
 		handler = authrequest.New(loc.AuthRequest)(handler)
+	}
+	if len(loc.SubFilter) > 0 {
+		handler = subfilter.New(loc.SubFilter)(handler)
 	}
 	return modules.BuildChain(&s.cfg.Modules, handler)
 }
