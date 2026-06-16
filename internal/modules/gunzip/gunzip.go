@@ -21,6 +21,8 @@ func New() func(http.Handler) http.Handler {
 			next.ServeHTTP(cw, r)
 
 			if cw.Header().Get("Content-Encoding") != "gzip" {
+				w.WriteHeader(cw.status)
+				w.Write(cw.body)
 				return
 			}
 
@@ -64,6 +66,9 @@ func (cw *captureWriter) WriteHeader(code int) {
 }
 
 func (cw *captureWriter) Write(b []byte) (int, error) {
+	if cw.status == 0 {
+		cw.status = 200
+	}
 	cw.body = append(cw.body, b...)
 	return len(b), nil
 }

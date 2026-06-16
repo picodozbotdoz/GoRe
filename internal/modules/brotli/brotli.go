@@ -77,6 +77,9 @@ func (cw *captureWriter) WriteHeader(code int) {
 }
 
 func (cw *captureWriter) Write(b []byte) (int, error) {
+	if cw.status == 0 {
+		cw.status = 200
+	}
 	cw.buf.Write(b)
 	return len(b), nil
 }

@@ -71,7 +71,7 @@ func New(configs []config.SplitConfig) func(http.Handler) http.Handler {
 
 				for _, b := range m.bands {
 					if hash < b.threshold {
-						w.Header().Set(m.target, b.value)
+						r.Header.Set(m.target, b.value)
 						break
 					}
 				}
