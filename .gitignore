@@ -1,2 +1,8 @@
+credentials*
+*.env
+.env
 gore
+*.key
+*.pem
+secrets*
 *.yaml

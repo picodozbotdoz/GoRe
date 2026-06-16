@@ -102,15 +102,18 @@ func h3TestSetup(t *testing.T, handler http.Handler) (addr string, certPath stri
 	}
 }
 
-func h3TestClient(certPath string) *http.Client {
+func h3CertPool(certPath string) *x509.CertPool {
 	caCert, _ := os.ReadFile(certPath)
-	caCertPool := x509.NewCertPool()
-	caCertPool.AppendCertsFromPEM(caCert)
+	pool := x509.NewCertPool()
+	pool.AppendCertsFromPEM(caCert)
+	return pool
+}
 
+func h3TestClient(certPath string) *http.Client {
 	return &http.Client{
 		Transport: &http3.Transport{
 			TLSClientConfig: &tls.Config{
-				RootCAs:    caCertPool,
+				RootCAs:    h3CertPool(certPath),
 				NextProtos: []string{"h3"},
 			},
 		},
@@ -266,14 +269,14 @@ func TestH3Redirect(t *testing.T) {
 		w.Write([]byte("redirected"))
 	})
 
-	addr, _, stop := h3TestSetup(t, mux)
+	addr, certPath, stop := h3TestSetup(t, mux)
 	defer stop()
 
 	client := &http.Client{
 		Transport: &http3.Transport{
 			TLSClientConfig: &tls.Config{
-				InsecureSkipVerify: true,
-				NextProtos:         []string{"h3"},
+				RootCAs:    h3CertPool(certPath),
+				NextProtos: []string{"h3"},
 			},
 		},
 		CheckRedirect: func(req *http.Request, via []*http.Request) error {
