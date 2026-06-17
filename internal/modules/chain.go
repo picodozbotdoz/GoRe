@@ -9,11 +9,14 @@ import (
 	"github.com/user/gore/internal/modules/basicauth"
 	"github.com/user/gore/internal/modules/bodylimit"
 	"github.com/user/gore/internal/modules/brotli"
+	"github.com/user/gore/internal/modules/defaulttype"
+	"github.com/user/gore/internal/modules/errorpage"
 	"github.com/user/gore/internal/modules/gunzip"
 	"github.com/user/gore/internal/modules/gzip"
 	"github.com/user/gore/internal/modules/headers"
 	"github.com/user/gore/internal/modules/limitconn"
 	"github.com/user/gore/internal/modules/mapmodule"
+	"github.com/user/gore/internal/modules/mergeslashes"
 	"github.com/user/gore/internal/modules/ratelimit"
 	"github.com/user/gore/internal/modules/realip"
 	"github.com/user/gore/internal/modules/split"
@@ -35,11 +38,14 @@ func BuildChain(cfg *config.ModulesConfig, next http.Handler) http.Handler {
 	}
 
 	if cfg.Headers != nil {
+		if cfg.Headers.Expires != "" {
+			handler = headers.NewExpiresHandler(cfg.Headers.Expires)(handler)
+		}
 		handler = headers.New(cfg.Headers.Add, cfg.Headers.Remove).ServeHTTP(handler)
 	}
 
 	if cfg.RateLimit != nil {
-		handler = ratelimit.New(cfg.RateLimit.Rate, cfg.RateLimit.Burst).ServeHTTP(handler)
+		handler = ratelimit.New(cfg.RateLimit.Rate, cfg.RateLimit.Burst, cfg.RateLimit.Status, cfg.RateLimit.LogLevel).ServeHTTP(handler)
 	}
 
 	if cfg.Access != nil {
@@ -63,11 +69,11 @@ func BuildChain(cfg *config.ModulesConfig, next http.Handler) http.Handler {
 	}
 
 	if cfg.LimitConn != nil && cfg.LimitConn.Connections > 0 {
-		handler = limitconn.New(cfg.LimitConn.Connections).ServeHTTP(handler)
+		handler = limitconn.New(cfg.LimitConn.Connections, cfg.LimitConn.LogLevel).ServeHTTP(handler)
 	}
 
 	if cfg.RealIP != nil {
-		handler = realip.New(cfg.RealIP.From)(handler)
+		handler = realip.New(cfg.RealIP.From, cfg.RealIP.Recursive)(handler)
 	}
 
 	if len(cfg.Map) > 0 {
@@ -80,6 +86,18 @@ func BuildChain(cfg *config.ModulesConfig, next http.Handler) http.Handler {
 
 	if cfg.BasicAuth != nil && len(cfg.BasicAuth.Users) > 0 {
 		handler = basicauth.New(cfg.BasicAuth.Realm, cfg.BasicAuth.Users)(handler)
+	}
+
+	if cfg.ErrorPage != nil {
+		handler = errorpage.New(cfg.ErrorPage)(handler)
+	}
+
+	if cfg.DefaultType != "" {
+		handler = defaulttype.New(cfg.DefaultType)(handler)
+	}
+
+	if cfg.MergeSlashes != nil && *cfg.MergeSlashes {
+		handler = mergeslashes.New(true)(handler)
 	}
 
 	handler = log.AccessMiddleware(

@@ -1,13 +1,17 @@
 package headers
 
-import "net/http"
+import (
+	"net/http"
+
+	"github.com/user/gore/internal/config"
+)
 
 type Handler struct {
-	Add    map[string]string
+	Add    []config.HeaderEntry
 	Remove []string
 }
 
-func New(add map[string]string, remove []string) *Handler {
+func New(add []config.HeaderEntry, remove []string) *Handler {
 	return &Handler{Add: add, Remove: remove}
 }
 
@@ -32,8 +36,11 @@ func (rw *responseWriter) WriteHeader(code int) {
 	for _, name := range rw.handler.Remove {
 		rw.Header().Del(name)
 	}
-	for name, value := range rw.handler.Add {
-		rw.Header().Set(name, value)
+	for _, entry := range rw.handler.Add {
+		if !entry.Always && code >= 400 {
+			continue
+		}
+		rw.Header().Set(entry.Name, entry.Value)
 	}
 	rw.ResponseWriter.WriteHeader(code)
 }

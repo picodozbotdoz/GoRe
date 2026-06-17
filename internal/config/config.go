@@ -17,10 +17,12 @@ type Config struct {
 }
 
 type Listen struct {
-	Addr  string `yaml:"addr"`
-	TLS   *TLS   `yaml:"tls,omitempty"`
-	HTTP2 *HTTP2 `yaml:"http2,omitempty"`
-	HTTP3 *HTTP3 `yaml:"http3,omitempty"`
+	Addr              string `yaml:"addr"`
+	TLS               *TLS   `yaml:"tls,omitempty"`
+	HTTP2             *HTTP2 `yaml:"http2,omitempty"`
+	HTTP3             *HTTP3 `yaml:"http3,omitempty"`
+	KeepAliveTimeout  int    `yaml:"keepalive_timeout,omitempty"`
+	KeepAliveRequests int    `yaml:"keepalive_requests,omitempty"`
 }
 
 type TLS struct {
@@ -88,9 +90,11 @@ type Location struct {
 	Autoindex    *bool             `yaml:"autoindex,omitempty"`
 	CacheControl string            `yaml:"cache_control,omitempty"`
 	TryFiles     []string          `yaml:"try_files,omitempty"`
-	AuthRequest  string            `yaml:"auth_request,omitempty"`
-	SubFilter    map[string]string `yaml:"sub_filter,omitempty"`
-	Mirror       string            `yaml:"mirror,omitempty"`
+	AuthRequest    string            `yaml:"auth_request,omitempty"`
+	SubFilter      map[string]string `yaml:"sub_filter,omitempty"`
+	SubFilterOnce  *bool             `yaml:"sub_filter_once,omitempty"`
+	SubFilterTypes []string          `yaml:"sub_filter_types,omitempty"`
+	Mirror         string            `yaml:"mirror,omitempty"`
 }
 
 type Rewrite struct {
@@ -100,24 +104,30 @@ type Rewrite struct {
 }
 
 type Proxy struct {
-	Upstream   string `yaml:"upstream"`
-	Buffering  *bool  `yaml:"buffering,omitempty"`
-	BufferSize string `yaml:"buffer_size,omitempty"`
+	Upstream           string `yaml:"upstream"`
+	Buffering          *bool  `yaml:"buffering,omitempty"`
+	BufferSize         string `yaml:"buffer_size,omitempty"`
+	Redirect           string `yaml:"redirect,omitempty"`
+	PassRequestHeaders *bool  `yaml:"pass_request_headers,omitempty"`
+	PassRequestBody    *bool  `yaml:"pass_request_body,omitempty"`
 }
 
 type Upstream struct {
-	Strategy       string             `yaml:"strategy"`
-	Servers        []UpstreamServer   `yaml:"servers"`
-	SetHeaders     map[string]string  `yaml:"set_headers,omitempty"`
-	Buffering      *bool              `yaml:"buffering,omitempty"`
-	Retries        int                `yaml:"retries,omitempty"`
-	HealthCheck    *HealthCheckConfig `yaml:"health_check,omitempty"`
-	Cache          *CacheConfig       `yaml:"cache,omitempty"`
-	Keepalive      int                `yaml:"keepalive,omitempty"`
-	ConnectTimeout int                `yaml:"connect_timeout,omitempty"`
-	ReadTimeout    int                `yaml:"read_timeout,omitempty"`
-	SendTimeout    int                `yaml:"send_timeout,omitempty"`
-	IdleTimeout    int                `yaml:"idle_timeout,omitempty"`
+	Strategy            string             `yaml:"strategy"`
+	Servers             []UpstreamServer   `yaml:"servers"`
+	SetHeaders          map[string]string  `yaml:"set_headers,omitempty"`
+	Buffering           *bool              `yaml:"buffering,omitempty"`
+	Retries             int                `yaml:"retries,omitempty"`
+	HealthCheck         *HealthCheckConfig `yaml:"health_check,omitempty"`
+	Cache               *CacheConfig       `yaml:"cache,omitempty"`
+	Keepalive           int                `yaml:"keepalive,omitempty"`
+	ConnectTimeout      int                `yaml:"connect_timeout,omitempty"`
+	ReadTimeout         int                `yaml:"read_timeout,omitempty"`
+	SendTimeout         int                `yaml:"send_timeout,omitempty"`
+	IdleTimeout         int                `yaml:"idle_timeout,omitempty"`
+	NextUpstream        string             `yaml:"next_upstream,omitempty"`
+	NextUpstreamTries   int                `yaml:"next_upstream_tries,omitempty"`
+	NextUpstreamTimeout int                `yaml:"next_upstream_timeout,omitempty"`
 }
 
 type HealthCheckConfig struct {
@@ -202,6 +212,13 @@ type ModulesConfig struct {
 	Map               []MapConfig      `yaml:"map,omitempty"`
 	SplitClients      []SplitConfig    `yaml:"split_clients,omitempty"`
 	Gunzip            *bool            `yaml:"gunzip,omitempty"`
+	ErrorPage         *ErrorPageConfig `yaml:"error_page,omitempty"`
+	ServerTokens      *bool            `yaml:"server_tokens,omitempty"`
+	DefaultType       string           `yaml:"default_type,omitempty"`
+	MergeSlashes      *bool            `yaml:"merge_slashes,omitempty"`
+	ClientBodyTimeout int             `yaml:"client_body_timeout,omitempty"`
+	ClientHeaderTimeout int           `yaml:"client_header_timeout,omitempty"`
+	SendTimeout       int              `yaml:"send_timeout,omitempty"`
 }
 
 type SplitConfig struct {
@@ -233,13 +250,19 @@ type BasicAuthConfig struct {
 	Users map[string]string `yaml:"users,omitempty"`
 }
 
+type ErrorPageConfig struct {
+	Pages map[int]string `yaml:"pages,omitempty"`
+}
+
 type RealIPConfig struct {
-	From string `yaml:"from,omitempty"`
+	From      []string `yaml:"from,omitempty"`
+	Recursive bool     `yaml:"recursive,omitempty"`
 }
 
 type LimitConnConfig struct {
 	Zone        string `yaml:"zone,omitempty"`
 	Connections int    `yaml:"connections"`
+	LogLevel    string `yaml:"log_level,omitempty"`
 }
 
 type StatusConfig struct {
@@ -279,9 +302,13 @@ func ParseSize(s string) int64 {
 }
 
 type GzipConfig struct {
-	Enabled bool     `yaml:"enabled"`
-	Level   int      `yaml:"level,omitempty"`
-	Types   []string `yaml:"types,omitempty"`
+	Enabled   bool     `yaml:"enabled"`
+	Level     int      `yaml:"level,omitempty"`
+	Types     []string `yaml:"types,omitempty"`
+	MinLength int      `yaml:"min_length,omitempty"`
+	Vary      bool     `yaml:"vary,omitempty"`
+	Proxied   bool     `yaml:"proxied,omitempty"`
+	Disable   string   `yaml:"disable,omitempty"` // User-Agent pattern
 }
 
 type BrotliConfig struct {
@@ -300,14 +327,23 @@ type AccessRule struct {
 }
 
 type RateLimitConfig struct {
-	Zone  string `yaml:"zone"`
-	Rate  string `yaml:"rate"`
-	Burst int    `yaml:"burst,omitempty"`
+	Zone     string `yaml:"zone"`
+	Rate     string `yaml:"rate"`
+	Burst    int    `yaml:"burst,omitempty"`
+	Status   int    `yaml:"status,omitempty"`
+	LogLevel string `yaml:"log_level,omitempty"`
 }
 
 type HeadersConfig struct {
-	Add    map[string]string `yaml:"add,omitempty"`
-	Remove []string          `yaml:"remove,omitempty"`
+	Add     []HeaderEntry  `yaml:"add,omitempty"`
+	Remove  []string       `yaml:"remove,omitempty"`
+	Expires string         `yaml:"expires,omitempty"`
+}
+
+type HeaderEntry struct {
+	Name   string `yaml:"name"`
+	Value  string `yaml:"value"`
+	Always bool   `yaml:"always,omitempty"`
 }
 
 type AccessLogConfig struct {
