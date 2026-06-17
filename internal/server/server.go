@@ -63,11 +63,13 @@ func (s *Server) initUpstreams() {
 			}
 		}
 		s.upstreams[name] = proxy.NewUpstream(name, servers, upstreamCfg.Strategy, &proxy.TimeoutConfig{
-			Connect:   upstreamCfg.GetConnectTimeout(),
-			Read:      upstreamCfg.GetReadTimeout(),
-			Send:      upstreamCfg.GetSendTimeout(),
-			Idle:      upstreamCfg.GetIdleTimeout(),
-			Keepalive: upstreamCfg.Keepalive,
+			Connect:           upstreamCfg.GetConnectTimeout(),
+			Read:              upstreamCfg.GetReadTimeout(),
+			Send:              upstreamCfg.GetSendTimeout(),
+			Idle:              upstreamCfg.GetIdleTimeout(),
+			Keepalive:         upstreamCfg.Keepalive,
+			KeepaliveTimeout:  upstreamCfg.KeepaliveTimeout,
+			KeepaliveRequests: upstreamCfg.KeepaliveRequests,
 		}, upstreamCfg.SetHeaders, upstreamCfg.GetBuffering(), upstreamCfg.GetRetries(), 0, "", upstreamCfg.NextUpstream, upstreamCfg.NextUpstreamTries, upstreamCfg.NextUpstreamTimeout, nil, nil)
 		if upstreamCfg.HealthCheck != nil && upstreamCfg.HealthCheck.Enabled {
 			proxy.StartHealthCheck(servers, upstreamCfg.HealthCheck.GetInterval(), upstreamCfg.HealthCheck.Path)

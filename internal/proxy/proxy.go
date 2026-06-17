@@ -16,27 +16,39 @@ import (
 )
 
 type Upstream struct {
-	Name       string
-	Balancer   Balancer
-	Proxy      *httputil.ReverseProxy
-	SetHeaders map[string]string
-	MaxRetries int
-	Cache      *cache.Cache
+	Name               string
+	Balancer           Balancer
+	Proxy              *httputil.ReverseProxy
+	SetHeaders         map[string]string
+	MaxRetries         int
+	Cache              *cache.Cache
+	Redirect           string
+	NextUpstream       string
+	NextUpstreamTries  int
+	NextUpstreamTimeout int
+	PassRequestHeaders *bool
+	PassRequestBody    *bool
 }
 
 type TimeoutConfig struct {
-	Connect   int // seconds
-	Read      int // seconds
-	Send      int // seconds
-	Idle      int // seconds
-	Keepalive int // max idle connections per upstream host
+	Connect          int // seconds
+	Read             int // seconds
+	Send             int // seconds
+	Idle             int // seconds
+	Keepalive        int // max idle connections per upstream host
+	KeepaliveTimeout int // seconds to keep idle connections
+	KeepaliveRequests int // max requests per keepalive connection
 }
 
-func NewUpstream(name string, servers []*Server, strategy string, timeouts *TimeoutConfig, setHeaders map[string]string, buffered bool, maxRetries int) *Upstream {
+func NewUpstream(name string, servers []*Server, strategy string, timeouts *TimeoutConfig, setHeaders map[string]string, buffered bool, maxRetries int, bufferSize int, redirect string, nextUpstream string, nextUpstreamTries int, nextUpstreamTimeout int, passRequestHeaders *bool, passRequestBody *bool) *Upstream {
 	var balancer Balancer
 	switch strategy {
 	case "least-conn":
-		balancer = NewRoundRobin(servers)
+		balancer = NewLeastConn(servers)
+	case "ip_hash":
+		balancer = NewIPHash(servers)
+	case "hash":
+		balancer = NewConsistentHash(servers)
 	default:
 		balancer = NewRoundRobin(servers)
 	}
@@ -45,7 +57,18 @@ func NewUpstream(name string, servers []*Server, strategy string, timeouts *Time
 		timeouts = &TimeoutConfig{Connect: 60, Read: 60, Send: 60, Idle: 90}
 	}
 
-	u := &Upstream{Name: name, Balancer: balancer, SetHeaders: setHeaders, MaxRetries: maxRetries}
+	u := &Upstream{
+		Name:               name,
+		Balancer:           balancer,
+		SetHeaders:         setHeaders,
+		MaxRetries:         maxRetries,
+		Redirect:           redirect,
+		NextUpstream:       nextUpstream,
+		NextUpstreamTries:  nextUpstreamTries,
+		NextUpstreamTimeout: nextUpstreamTimeout,
+		PassRequestHeaders: passRequestHeaders,
+		PassRequestBody:    passRequestBody,
+	}
 	u.Proxy = &httputil.ReverseProxy{
 		Director:     u.director,
 		Transport:    u.transport(timeouts),
@@ -54,11 +77,14 @@ func NewUpstream(name string, servers []*Server, strategy string, timeouts *Time
 	if !buffered {
 		u.Proxy.FlushInterval = -1
 	}
+	if redirect != "" {
+		u.Proxy.ModifyResponse = u.modifyResponse
+	}
 	return u
 }
 
 func (u *Upstream) director(req *http.Request) {
-	server := u.Balancer.Next()
+	server := u.Balancer.Next(req)
 	if server == nil {
 		return
 	}
@@ -71,9 +97,39 @@ func (u *Upstream) director(req *http.Request) {
 	req.URL.Scheme = target.Scheme
 	req.URL.Host = target.Host
 
-	for k, v := range u.SetHeaders {
-		req.Header.Set(k, v)
+	if u.PassRequestBody != nil && !*u.PassRequestBody {
+		req.Body = nil
+		req.ContentLength = 0
+		req.Header.Del("Content-Length")
 	}
+
+	if u.PassRequestHeaders == nil || *u.PassRequestHeaders {
+		for k, v := range u.SetHeaders {
+			req.Header.Set(k, v)
+		}
+	}
+}
+
+func (u *Upstream) modifyResponse(resp *http.Response) error {
+	if u.Redirect != "" {
+		if loc := resp.Header.Get("Location"); loc != "" {
+			resp.Header.Set("Location", rewriteRedirect(loc, u.Redirect))
+		}
+	}
+	return nil
+}
+
+func rewriteRedirect(loc, pattern string) string {
+	if pattern == "default" || pattern == "" {
+		return loc
+	}
+	parts := strings.SplitN(pattern, " ", 2)
+	if len(parts) != 2 {
+		return loc
+	}
+	re := strings.TrimSpace(parts[0])
+	repl := strings.TrimSpace(parts[1])
+	return strings.Replace(loc, re, repl, 1)
 }
 
 func (u *Upstream) transport(tc *TimeoutConfig) *http.Transport {
@@ -81,10 +137,14 @@ func (u *Upstream) transport(tc *TimeoutConfig) *http.Transport {
 	if keepalivePerHost <= 0 {
 		keepalivePerHost = 10
 	}
+	idleTimeout := time.Duration(tc.Idle) * time.Second
+	if tc.KeepaliveTimeout > 0 {
+		idleTimeout = time.Duration(tc.KeepaliveTimeout) * time.Second
+	}
 	return &http.Transport{
 		MaxIdleConns:        keepalivePerHost * 10,
 		MaxIdleConnsPerHost: keepalivePerHost,
-		IdleConnTimeout:     time.Duration(tc.Idle) * time.Second,
+		IdleConnTimeout:     idleTimeout,
 		DialContext: (&net.Dialer{
 			Timeout:   time.Duration(tc.Connect) * time.Second,
 			KeepAlive: 30 * time.Second,
@@ -124,6 +184,10 @@ func (u *Upstream) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	maxAttempts := u.MaxRetries + 1
+	if u.NextUpstreamTries > 0 {
+		maxAttempts = u.NextUpstreamTries
+	}
+	flags := u.parseNextUpstreamFlags()
 	var lastErr error
 
 	for attempt := 0; attempt < maxAttempts; attempt++ {
@@ -156,7 +220,7 @@ func (u *Upstream) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			u.Proxy.ServeHTTP(rec, r)
 		}
 
-		if rec.statusCode >= 500 && rec.statusCode < 600 && attempt < u.MaxRetries {
+		if attempt < maxAttempts-1 && shouldRetry(rec.statusCode, lastErr, flags) {
 			lastErr = fmt.Errorf("upstream returned %d", rec.statusCode)
 			continue
 		}
@@ -166,6 +230,35 @@ func (u *Upstream) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if lastErr != nil {
 		http.Error(w, "Bad Gateway", http.StatusBadGateway)
 	}
+}
+
+func (u *Upstream) parseNextUpstreamFlags() map[string]bool {
+	flags := make(map[string]bool)
+	if u.NextUpstream == "" {
+		flags["error"] = true
+		flags["timeout"] = true
+		flags["invalid_header"] = true
+		return flags
+	}
+	for _, f := range strings.Fields(u.NextUpstream) {
+		flags[f] = true
+	}
+	return flags
+}
+
+func shouldRetry(statusCode int, err error, flags map[string]bool) bool {
+	if err != nil {
+		if flags["error"] {
+			return true
+		}
+		return false
+	}
+	if statusCode >= 500 && statusCode < 600 {
+		if flags["error"] {
+			return true
+		}
+	}
+	return false
 }
 
 type retryResponseWriter struct {
@@ -232,7 +325,7 @@ func isWebSocketUpgrade(r *http.Request) bool {
 }
 
 func (u *Upstream) proxyWebSocket(w http.ResponseWriter, r *http.Request) {
-	server := u.Balancer.Next()
+	server := u.Balancer.Next(r)
 	if server == nil {
 		http.Error(w, "Bad Gateway", http.StatusBadGateway)
 		return
@@ -259,7 +352,6 @@ func (u *Upstream) proxyWebSocket(w http.ResponseWriter, r *http.Request) {
 	}
 	defer backendConn.Close()
 
-	// Forward the original HTTP request to backend
 	r.URL.Scheme = "http"
 	r.URL.Host = backendAddr
 	r.Header.Del("Connection")
