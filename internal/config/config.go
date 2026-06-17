@@ -121,6 +121,8 @@ type Upstream struct {
 	HealthCheck         *HealthCheckConfig `yaml:"health_check,omitempty"`
 	Cache               *CacheConfig       `yaml:"cache,omitempty"`
 	Keepalive           int                `yaml:"keepalive,omitempty"`
+	KeepaliveTimeout    int                `yaml:"keepalive_timeout,omitempty"`
+	KeepaliveRequests   int                `yaml:"keepalive_requests,omitempty"`
 	ConnectTimeout      int                `yaml:"connect_timeout,omitempty"`
 	ReadTimeout         int                `yaml:"read_timeout,omitempty"`
 	SendTimeout         int                `yaml:"send_timeout,omitempty"`
@@ -194,6 +196,8 @@ func (u *Upstream) GetIdleTimeout() int {
 type UpstreamServer struct {
 	Addr   string `yaml:"addr"`
 	Weight int    `yaml:"weight,omitempty"`
+	Backup bool   `yaml:"backup,omitempty"`
+	Down   bool   `yaml:"down,omitempty"`
 }
 
 type ModulesConfig struct {
