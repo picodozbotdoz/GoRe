@@ -5,6 +5,7 @@ import (
 	"context"
 	"crypto/tls"
 	"crypto/x509"
+	"encoding/pem"
 	"fmt"
 	"io"
 	"net"
@@ -368,6 +369,21 @@ func parseECDHCurves(names string) []tls.CurveID {
 	return curves
 }
 
+func loadDHParams(path string) error {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return fmt.Errorf("read dhparam file: %w", err)
+	}
+	block, _ := pem.Decode(data)
+	if block == nil {
+		return fmt.Errorf("no PEM block found in dhparam file")
+	}
+	if block.Type != "DH PARAMETERS" {
+		return fmt.Errorf("unexpected PEM type %q, want DH PARAMETERS", block.Type)
+	}
+	return nil
+}
+
 type ocspStapler struct {
 	mu       sync.RWMutex
 	response []byte
@@ -559,6 +575,11 @@ func (s *Server) buildTLSConfig(listen *config.Listen) *tls.Config {
 	if listen.TLS.ECDHCurve != "" {
 		if curves := parseECDHCurves(listen.TLS.ECDHCurve); len(curves) > 0 {
 			tlsConfig.CurvePreferences = curves
+		}
+	}
+	if listen.TLS.DHParam != "" {
+		if err := loadDHParams(listen.TLS.DHParam); err != nil {
+			gorelog.Infof("ssl_dhparam: %v (Go manages DH groups automatically)", err)
 		}
 	}
 	if listen.TLS.ClientCertificate != "" {
