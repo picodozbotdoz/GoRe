@@ -70,6 +70,7 @@ func (a *accessLogger) log(entry accessEntry) {
 		"$http_user_agent", entry.HTTPUserAgent,
 		"$http_x_forwarded_for", entry.HTTPXForwardedFor,
 		"$upstream_addr", entry.UpstreamAddr,
+		"$http_x_subrequest_uri", entry.HTTPXSubrequestUri,
 	)
 
 	line = replacer.Replace(line)
@@ -91,6 +92,7 @@ type accessEntry struct {
 	HTTPUserAgent     string
 	HTTPXForwardedFor string
 	UpstreamAddr      string
+	HTTPXSubrequestUri string
 }
 
 type responseWriter struct {
@@ -169,6 +171,7 @@ func AccessMiddleware(enabled bool, output, format string, subrequest bool) func
 				HTTPReferer:       r.Header.Get("Referer"),
 				HTTPUserAgent:     r.Header.Get("User-Agent"),
 				HTTPXForwardedFor: r.Header.Get("X-Forwarded-For"),
+				HTTPXSubrequestUri: r.Header.Get("X-Subrequest-Uri"),
 			}
 
 			if entry.HTTPReferer == "" {

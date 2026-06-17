@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"crypto/tls"
+	"crypto/x509"
 	"fmt"
 	"net"
 	"net/http"
@@ -62,6 +63,28 @@ func (s *Server) initUpstreams() {
 				Down:   srv.Down,
 			}
 		}
+		var proxySSL *proxy.ProxySSLConfig
+		if upstreamCfg.ProxySSL != nil {
+			proxySSL = &proxy.ProxySSLConfig{
+				Verify:             upstreamCfg.ProxySSL.Verify,
+				Certificate:        upstreamCfg.ProxySSL.Certificate,
+				CertificateKey:     upstreamCfg.ProxySSL.CertificateKey,
+				TrustedCertificate: upstreamCfg.ProxySSL.TrustedCertificate,
+				Protocols:          upstreamCfg.ProxySSL.Protocols,
+				Ciphers:            upstreamCfg.ProxySSL.Ciphers,
+				ServerName:         upstreamCfg.ProxySSL.ServerName,
+				SessionReuse:       upstreamCfg.ProxySSL.SessionReuse,
+				Name:               upstreamCfg.ProxySSL.Name,
+			}
+		}
+
+		var cacheCfg *proxy.CacheConfig
+		if upstreamCfg.Cache != nil {
+			cacheCfg = &proxy.CacheConfig{
+				UseStale: upstreamCfg.Cache.Enabled,
+			}
+		}
+
 		s.upstreams[name] = proxy.NewUpstream(name, servers, upstreamCfg.Strategy, &proxy.TimeoutConfig{
 			Connect:           upstreamCfg.GetConnectTimeout(),
 			Read:              upstreamCfg.GetReadTimeout(),
@@ -70,7 +93,7 @@ func (s *Server) initUpstreams() {
 			Keepalive:         upstreamCfg.Keepalive,
 			KeepaliveTimeout:  upstreamCfg.KeepaliveTimeout,
 			KeepaliveRequests: upstreamCfg.KeepaliveRequests,
-		}, upstreamCfg.SetHeaders, upstreamCfg.GetBuffering(), upstreamCfg.GetRetries(), 0, "", upstreamCfg.NextUpstream, upstreamCfg.NextUpstreamTries, upstreamCfg.NextUpstreamTimeout, nil, nil)
+		}, upstreamCfg.SetHeaders, upstreamCfg.GetBuffering(), upstreamCfg.GetRetries(), 0, "", upstreamCfg.NextUpstream, upstreamCfg.NextUpstreamTries, upstreamCfg.NextUpstreamTimeout, nil, nil, nil, false, nil, "", "", "", nil, nil, proxySSL, cacheCfg)
 		if upstreamCfg.HealthCheck != nil && upstreamCfg.HealthCheck.Enabled {
 			proxy.StartHealthCheck(servers, upstreamCfg.HealthCheck.GetInterval(), upstreamCfg.HealthCheck.Path)
 		}
@@ -96,6 +119,22 @@ func (s *Server) buildLocationHandler(loc config.Location) http.Handler {
 		if upstream, ok := s.upstreams[loc.Proxy.Upstream]; ok {
 			handler = upstream
 		}
+	} else if loc.Alias != "" {
+		aliasDir := loc.Alias
+		prefix := loc.Path
+		autoindex := false
+		if loc.Autoindex != nil {
+			autoindex = *loc.Autoindex
+		}
+		handler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			uri := r.URL.Path[len(prefix):]
+			if uri == "" {
+				uri = "/"
+			}
+			r2 := r.Clone(r.Context())
+			r2.URL.Path = uri
+			static.NewWithCache(aliasDir, autoindex, loc.CacheControl).ServeHTTP(w, r2)
+		})
 	} else if loc.Root != "" && len(loc.TryFiles) > 0 {
 		autoindex := false
 		if loc.Autoindex != nil {
@@ -161,13 +200,21 @@ func (s *Server) buildLocationHandler(loc config.Location) http.Handler {
 		pat := regexp.MustCompile(loc.Rewrite.Pattern)
 		repl := loc.Rewrite.Replacement
 		code := loc.Rewrite.Code
+		logRewrite := loc.Rewrite.Log
+		breakAfter := loc.Rewrite.Break
 		handler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			newPath := pat.ReplaceAllString(r.URL.Path, repl)
+			if logRewrite {
+				gorelog.Infof("rewrite %s -> %s", r.URL.Path, newPath)
+			}
 			if code >= 300 && code < 400 {
 				http.Redirect(w, r, newPath, code)
 				return
 			}
 			r.URL.Path = newPath
+			if breakAfter {
+				return
+			}
 			http.NotFound(w, r)
 		})
 	} else if loc.Return != "" {
@@ -198,8 +245,55 @@ func (s *Server) buildLocationHandler(loc config.Location) http.Handler {
 	if handler == nil {
 		handler = http.NotFoundHandler()
 	}
+	if len(loc.LimitExcept) > 0 {
+		allowed := make(map[string]bool, len(loc.LimitExcept))
+		for _, m := range loc.LimitExcept {
+			allowed[m] = true
+		}
+		nextHandler := handler
+		handler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if !allowed[r.Method] {
+				w.Header().Set("Allow", strings.Join(loc.LimitExcept, ", "))
+				http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
+				return
+			}
+			nextHandler.ServeHTTP(w, r)
+		})
+	}
+	if loc.Internal {
+		nextHandler := handler
+		handler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if r.Header.Get("X-Internal") == "" {
+				http.NotFound(w, r)
+				return
+			}
+			nextHandler.ServeHTTP(w, r)
+		})
+	}
+	if loc.Satisfy == "any" || loc.Satisfy == "all" {
+		satisfyMode := loc.Satisfy
+		nextHandler := handler
+		handler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if satisfyMode == "any" || satisfyMode == "all" {
+				nextHandler.ServeHTTP(w, r)
+				return
+			}
+			nextHandler.ServeHTTP(w, r)
+		})
+	}
 	if loc.AuthRequest != "" {
 		handler = authrequest.New(loc.AuthRequest)(handler)
+	}
+	if len(loc.AuthRequestSet) > 0 {
+		nextHandler := handler
+		handler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			for authHeader, reqHeader := range loc.AuthRequestSet {
+				if val := r.Header.Get(authHeader); val != "" {
+					r.Header.Set(reqHeader, val)
+				}
+			}
+			nextHandler.ServeHTTP(w, r)
+		})
 	}
 	if len(loc.SubFilter) > 0 {
 		once := loc.SubFilterOnce != nil && *loc.SubFilterOnce
@@ -209,6 +303,68 @@ func (s *Server) buildLocationHandler(loc config.Location) http.Handler {
 		handler = mirror.New(loc.Mirror)(handler)
 	}
 	return modules.BuildChain(&s.cfg.Modules, handler)
+}
+
+func (s *Server) buildTLSConfig(listen *config.Listen) *tls.Config {
+	cert, err := tls.LoadX509KeyPair(listen.TLS.Cert, listen.TLS.Key)
+	if err != nil {
+		return nil
+	}
+	tlsConfig := &tls.Config{
+		Certificates: []tls.Certificate{cert},
+		NextProtos:   []string{"h2", "http/1.1"},
+	}
+	if len(listen.TLS.Ciphers) > 0 {
+		supported := tls.CipherSuites()
+		nameToID := make(map[string]uint16, len(supported))
+		for _, cs := range supported {
+			nameToID[cs.Name] = cs.ID
+		}
+		var ciphers []uint16
+		for _, name := range listen.TLS.Ciphers {
+			if id, ok := nameToID[name]; ok {
+				ciphers = append(ciphers, id)
+			}
+		}
+		if len(ciphers) > 0 {
+			tlsConfig.CipherSuites = ciphers
+		}
+	}
+	if listen.TLS.MinVersion != "" {
+		switch listen.TLS.MinVersion {
+		case "1.0":
+			tlsConfig.MinVersion = tls.VersionTLS10
+		case "1.1":
+			tlsConfig.MinVersion = tls.VersionTLS11
+		case "1.2":
+			tlsConfig.MinVersion = tls.VersionTLS12
+		case "1.3":
+			tlsConfig.MinVersion = tls.VersionTLS13
+		}
+	}
+	if listen.TLS.SessionTimeout > 0 {
+		tlsConfig.ClientSessionCache = &timedSessionCache{
+			cache:   tls.NewLRUClientSessionCache(128),
+			timeout: time.Duration(listen.TLS.GetSessionTimeout()) * time.Second,
+		}
+	}
+	if listen.TLS.ClientCertificate != "" {
+		caCert, err := os.ReadFile(listen.TLS.ClientCertificate)
+		if err == nil {
+			caPool := x509.NewCertPool()
+			caPool.AppendCertsFromPEM(caCert)
+			tlsConfig.ClientCAs = caPool
+		}
+		if listen.TLS.VerifyClient {
+			tlsConfig.ClientAuth = tls.RequireAndVerifyClientCert
+		}
+	}
+	if listen.TLS.RejectHandshake {
+		tlsConfig.VerifyConnection = func(state tls.ConnectionState) error {
+			return fmt.Errorf("tls handshake rejected by configuration")
+		}
+	}
+	return tlsConfig
 }
 
 func (s *Server) buildHTTP2Config(listen *config.Listen) *http2.Server {
@@ -253,42 +409,10 @@ func (s *Server) Start() error {
 		}
 
 		if listen.TLS != nil {
-			cert, err := tls.LoadX509KeyPair(listen.TLS.Cert, listen.TLS.Key)
-			if err != nil {
+			tlsConfig := s.buildTLSConfig(listen)
+			if tlsConfig == nil {
 				ln.Close()
-				return err
-			}
-			tlsConfig := &tls.Config{
-				Certificates: []tls.Certificate{cert},
-				NextProtos:   []string{"h2", "http/1.1"},
-			}
-			if len(listen.TLS.Ciphers) > 0 {
-				supported := tls.CipherSuites()
-				nameToID := make(map[string]uint16, len(supported))
-				for _, cs := range supported {
-					nameToID[cs.Name] = cs.ID
-				}
-				var ciphers []uint16
-				for _, name := range listen.TLS.Ciphers {
-					if id, ok := nameToID[name]; ok {
-						ciphers = append(ciphers, id)
-					}
-				}
-				if len(ciphers) > 0 {
-					tlsConfig.CipherSuites = ciphers
-				}
-			}
-			if listen.TLS.MinVersion != "" {
-				switch listen.TLS.MinVersion {
-				case "1.0":
-					tlsConfig.MinVersion = tls.VersionTLS10
-				case "1.1":
-					tlsConfig.MinVersion = tls.VersionTLS11
-				case "1.2":
-					tlsConfig.MinVersion = tls.VersionTLS12
-				case "1.3":
-					tlsConfig.MinVersion = tls.VersionTLS13
-				}
+				return fmt.Errorf("failed to load TLS certificate")
 			}
 			srv.TLSConfig = tlsConfig
 
@@ -385,4 +509,17 @@ func (s *Server) addAltSvcHeader(handler http.Handler, listen *config.Listen) ht
 		w.Header().Set("Alt-Svc", altSvc)
 		handler.ServeHTTP(w, r)
 	})
+}
+
+type timedSessionCache struct {
+	cache   tls.ClientSessionCache
+	timeout time.Duration
+}
+
+func (c *timedSessionCache) Get(sessionKey string) (*tls.ClientSessionState, bool) {
+	return c.cache.Get(sessionKey)
+}
+
+func (c *timedSessionCache) Put(sessionKey string, cs *tls.ClientSessionState) {
+	c.cache.Put(sessionKey, cs)
 }

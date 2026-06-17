@@ -4,6 +4,8 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"golang.org/x/crypto/bcrypt"
 )
 
 func TestBasicAuthSuccess(t *testing.T) {
@@ -69,5 +71,46 @@ func TestBasicAuthNoUsers(t *testing.T) {
 
 	if rec.Code != 200 {
 		t.Errorf("status = %d, want 200 (no users = pass-through)", rec.Code)
+	}
+}
+
+func TestBasicAuthBcrypt(t *testing.T) {
+	hash, err := bcrypt.GenerateFromPassword([]byte("secret"), bcrypt.DefaultCost)
+	if err != nil {
+		t.Fatal(err)
+	}
+	users := map[string]string{"admin": string(hash)}
+	handler := New("Admin", users)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(200)
+		w.Write([]byte("ok"))
+	}))
+
+	req := httptest.NewRequest("GET", "/", nil)
+	req.SetBasicAuth("admin", "secret")
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+
+	if rec.Code != 200 {
+		t.Errorf("status = %d, want 200", rec.Code)
+	}
+}
+
+func TestBasicAuthBcryptFailure(t *testing.T) {
+	hash, err := bcrypt.GenerateFromPassword([]byte("secret"), bcrypt.DefaultCost)
+	if err != nil {
+		t.Fatal(err)
+	}
+	users := map[string]string{"admin": string(hash)}
+	handler := New("Admin", users)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(200)
+	}))
+
+	req := httptest.NewRequest("GET", "/", nil)
+	req.SetBasicAuth("admin", "wrong")
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+
+	if rec.Code != 401 {
+		t.Errorf("status = %d, want 401", rec.Code)
 	}
 }
