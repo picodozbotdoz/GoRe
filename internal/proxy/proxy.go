@@ -1,6 +1,7 @@
 package proxy
 
 import (
+	"context"
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
@@ -62,6 +63,7 @@ type TimeoutConfig struct {
 	Keepalive        int // max idle connections per upstream host
 	KeepaliveTimeout int // seconds to keep idle connections
 	KeepaliveRequests int // max requests per keepalive connection
+	Resolver         string // DNS resolver address (e.g. "8.8.8.8:53")
 }
 
 type ProxySSLConfig struct {
@@ -291,14 +293,32 @@ func (u *Upstream) transport(tc *TimeoutConfig) *http.Transport {
 		}
 	}
 
+	dialer := &net.Dialer{
+		Timeout:   time.Duration(tc.Connect) * time.Second,
+		KeepAlive: keepAliveDuration,
+	}
+
+	var resolver *net.Resolver
+	if tc.Resolver != "" {
+		resolverAddr := tc.Resolver
+		if !strings.Contains(resolverAddr, ":") {
+			resolverAddr = resolverAddr + ":53"
+		}
+		resolver = &net.Resolver{
+			PreferGo: true,
+			Dial: func(ctx context.Context, network, address string) (net.Conn, error) {
+				d := net.Dialer{Timeout: 5 * time.Second}
+				return d.DialContext(ctx, "udp", resolverAddr)
+			},
+		}
+		dialer.Resolver = resolver
+	}
+
 	return &http.Transport{
 		MaxIdleConns:        keepalivePerHost * 10,
 		MaxIdleConnsPerHost: keepalivePerHost,
 		IdleConnTimeout:     idleTimeout,
-		DialContext: (&net.Dialer{
-			Timeout:   time.Duration(tc.Connect) * time.Second,
-			KeepAlive: keepAliveDuration,
-		}).DialContext,
+		DialContext:         dialer.DialContext,
 		ResponseHeaderTimeout: time.Duration(tc.Read) * time.Second,
 		TLSClientConfig:       tlsCfg,
 		ForceAttemptHTTP2:     true,
