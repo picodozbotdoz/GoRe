@@ -11,6 +11,7 @@ import (
 	"net/http/httputil"
 	"net/url"
 	"os"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -52,6 +53,7 @@ type Upstream struct {
 	HideHeaders         []string
 	SocketKeepalive     *bool
 	BufferSize          int
+	ProxyProtocol       bool
 	cacheLocks          sync.Map
 }
 
@@ -78,7 +80,7 @@ type ProxySSLConfig struct {
 	Name               string
 }
 
-func NewUpstream(name string, servers []*Server, strategy string, timeouts *TimeoutConfig, setHeaders map[string]string, buffered bool, maxRetries int, bufferSize int, redirect string, nextUpstream string, nextUpstreamTries int, nextUpstreamTimeout int, passRequestHeaders *bool, passRequestBody *bool, requestBuffering *bool, interceptErrors bool, errorPages map[int]string, cookieDomain string, cookiePath string, method string, hideHeaders []string, socketKeepalive *bool, proxySSL *ProxySSLConfig, cacheConfig *CacheConfig) *Upstream {
+func NewUpstream(name string, servers []*Server, strategy string, timeouts *TimeoutConfig, setHeaders map[string]string, buffered bool, maxRetries int, bufferSize int, redirect string, nextUpstream string, nextUpstreamTries int, nextUpstreamTimeout int, passRequestHeaders *bool, passRequestBody *bool, requestBuffering *bool, interceptErrors bool, errorPages map[int]string, cookieDomain string, cookiePath string, method string, hideHeaders []string, socketKeepalive *bool, proxySSL *ProxySSLConfig, cacheConfig *CacheConfig, proxyProtocol bool) *Upstream {
 	var balancer Balancer
 	switch strategy {
 	case "least-conn":
@@ -117,6 +119,7 @@ func NewUpstream(name string, servers []*Server, strategy string, timeouts *Time
 		BufferSize:         bufferSize,
 		ProxySSL:           proxySSL,
 		CacheConfig:        cacheConfig,
+		ProxyProtocol:      proxyProtocol,
 	}
 	u.Proxy = &httputil.ReverseProxy{
 		Director:     u.director,
@@ -314,11 +317,40 @@ func (u *Upstream) transport(tc *TimeoutConfig) *http.Transport {
 		dialer.Resolver = resolver
 	}
 
+	dialContext := dialer.DialContext
+
+	if u.ProxyProtocol {
+		origDialContext := dialContext
+		dialContext = func(ctx context.Context, network, addr string) (net.Conn, error) {
+			conn, err := origDialContext(ctx, network, addr)
+			if err != nil {
+				return nil, err
+			}
+			host, portStr, _ := net.SplitHostPort(addr)
+			port := 0
+			if p, err := strconv.Atoi(portStr); err == nil {
+				port = p
+			}
+			ip := net.ParseIP(host)
+			var header []byte
+			if ip4 := ip.To4(); ip4 != nil {
+				header = []byte(fmt.Sprintf("PROXY TCP4 %s %s %d %d\r\n", "0.0.0.0", host, 0, port))
+			} else {
+				header = []byte(fmt.Sprintf("PROXY TCP6 %s %s %d %d\r\n", "::", host, 0, port))
+			}
+			if _, err := conn.Write(header); err != nil {
+				conn.Close()
+				return nil, err
+			}
+			return conn, nil
+		}
+	}
+
 	return &http.Transport{
 		MaxIdleConns:        keepalivePerHost * 10,
 		MaxIdleConnsPerHost: keepalivePerHost,
 		IdleConnTimeout:     idleTimeout,
-		DialContext:         dialer.DialContext,
+		DialContext:         dialContext,
 		ResponseHeaderTimeout: time.Duration(tc.Read) * time.Second,
 		TLSClientConfig:       tlsCfg,
 		ForceAttemptHTTP2:     true,

@@ -46,7 +46,7 @@ func TestUpstreamServeHTTP(t *testing.T) {
 	defer backend.Close()
 
 	servers := []*Server{{Addr: backend.Listener.Addr().String(), Weight: 1}}
-	upstream := NewUpstream("test", servers, "round-robin", nil, nil, true, 0, 0, "", "", 0, 0, nil, nil, nil, false, nil, "", "", "", nil, nil, nil, nil)
+	upstream := NewUpstream("test", servers, "round-robin", nil, nil, true, 0, 0, "", "", 0, 0, nil, nil, nil, false, nil, "", "", "", nil, nil, nil, nil, false)
 
 	req := httptest.NewRequest("GET", "/", nil)
 	w := httptest.NewRecorder()
@@ -69,7 +69,7 @@ func TestProxyRedirect(t *testing.T) {
 
 	servers := []*Server{{Addr: backend.Listener.Addr().String(), Weight: 1}}
 	boolTrue := true
-	upstream := NewUpstream("test", servers, "round-robin", nil, nil, true, 0, 0, "old.example.com new.example.com", "", 0, 0, &boolTrue, &boolTrue, nil, false, nil, "", "", "", nil, nil, nil, nil)
+	upstream := NewUpstream("test", servers, "round-robin", nil, nil, true, 0, 0, "old.example.com new.example.com", "", 0, 0, &boolTrue, &boolTrue, nil, false, nil, "", "", "", nil, nil, nil, nil, false)
 
 	req := httptest.NewRequest("GET", "/redirect", nil)
 	w := httptest.NewRecorder()
@@ -96,7 +96,7 @@ func TestProxyPassRequestHeadersDisabled(t *testing.T) {
 
 	servers := []*Server{{Addr: backend.Listener.Addr().String(), Weight: 1}}
 	boolFalse := false
-	upstream := NewUpstream("test", servers, "round-robin", nil, map[string]string{"X-Custom": "value"}, true, 0, 0, "", "", 0, 0, &boolFalse, nil, nil, false, nil, "", "", "", nil, nil, nil, nil)
+	upstream := NewUpstream("test", servers, "round-robin", nil, map[string]string{"X-Custom": "value"}, true, 0, 0, "", "", 0, 0, &boolFalse, nil, nil, false, nil, "", "", "", nil, nil, nil, nil, false)
 
 	req := httptest.NewRequest("GET", "/", nil)
 	w := httptest.NewRecorder()
@@ -125,7 +125,7 @@ func TestProxyPassRequestBodyDisabled(t *testing.T) {
 
 	servers := []*Server{{Addr: backend.Listener.Addr().String(), Weight: 1}}
 	boolFalse := false
-	upstream := NewUpstream("test", servers, "round-robin", nil, nil, true, 0, 0, "", "", 0, 0, nil, &boolFalse, nil, false, nil, "", "", "", nil, nil, nil, nil)
+	upstream := NewUpstream("test", servers, "round-robin", nil, nil, true, 0, 0, "", "", 0, 0, nil, &boolFalse, nil, false, nil, "", "", "", nil, nil, nil, nil, false)
 
 	req := httptest.NewRequest("POST", "/", strings.NewReader("test body"))
 	w := httptest.NewRecorder()
@@ -305,4 +305,16 @@ func TestDownServersSkipped(t *testing.T) {
 	if s.Addr != "127.0.0.1:8081" {
 		t.Errorf("expected non-down server, got %v", s.Addr)
 	}
+}
+
+func TestResolverConfig(t *testing.T) {
+	servers := []*Server{{Addr: "127.0.0.1:8080", Weight: 1}}
+	tc := &TimeoutConfig{
+		Connect:  5,
+		Read:     30,
+		Send:     30,
+		Idle:     60,
+		Resolver: "8.8.8.8",
+	}
+	_ = NewUpstream("test", servers, "round-robin", tc, nil, true, 0, 0, "", "", 0, 0, nil, nil, nil, false, nil, "", "", "", nil, nil, nil, nil, false)
 }

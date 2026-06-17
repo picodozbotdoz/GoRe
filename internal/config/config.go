@@ -166,6 +166,9 @@ type Upstream struct {
 	NextUpstream        string             `yaml:"next_upstream,omitempty"`
 	NextUpstreamTries   int                `yaml:"next_upstream_tries,omitempty"`
 	NextUpstreamTimeout int                `yaml:"next_upstream_timeout,omitempty"`
+	ProxyProtocol       bool               `yaml:"proxy_protocol,omitempty"`
+	HideHeaders         []string           `yaml:"hide_headers,omitempty"`
+	SocketKeepalive     *bool              `yaml:"socket_keepalive,omitempty"`
 }
 
 type ProxySSL struct {

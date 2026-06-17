@@ -93,7 +93,8 @@ func (s *Server) initUpstreams() {
 			Keepalive:         upstreamCfg.Keepalive,
 			KeepaliveTimeout:  upstreamCfg.KeepaliveTimeout,
 			KeepaliveRequests: upstreamCfg.KeepaliveRequests,
-		}, upstreamCfg.SetHeaders, upstreamCfg.GetBuffering(), upstreamCfg.GetRetries(), 0, "", upstreamCfg.NextUpstream, upstreamCfg.NextUpstreamTries, upstreamCfg.NextUpstreamTimeout, nil, nil, nil, false, nil, "", "", "", nil, nil, proxySSL, cacheCfg)
+			Resolver:          s.cfg.Modules.Resolver,
+		}, upstreamCfg.SetHeaders, upstreamCfg.GetBuffering(), upstreamCfg.GetRetries(), 0, "", upstreamCfg.NextUpstream, upstreamCfg.NextUpstreamTries, upstreamCfg.NextUpstreamTimeout, nil, nil, nil, false, nil, "", "", "", nil, nil, proxySSL, cacheCfg, upstreamCfg.ProxyProtocol)
 		if upstreamCfg.HealthCheck != nil && upstreamCfg.HealthCheck.Enabled {
 			proxy.StartHealthCheck(servers, upstreamCfg.HealthCheck.GetInterval(), upstreamCfg.HealthCheck.Path)
 		}
