@@ -35,6 +35,13 @@ type TLS struct {
 	VerifyClient      bool     `yaml:"verify_client,omitempty"`
 	VerifyDepth       int      `yaml:"verify_depth,omitempty"`
 	RejectHandshake   bool     `yaml:"reject_handshake,omitempty"`
+	ECDHCurve         string   `yaml:"ecdh_curve,omitempty"`
+	DHParam           string   `yaml:"dhparam,omitempty"`
+	CRL               string   `yaml:"crl,omitempty"`
+	PasswordFile      string   `yaml:"password_file,omitempty"`
+	EarlyData         bool     `yaml:"early_data,omitempty"`
+	Stapling          bool     `yaml:"stapling,omitempty"`
+	StaplingVerify    bool     `yaml:"stapling_verify,omitempty"`
 }
 
 func (t *TLS) GetSessionTimeout() int {
@@ -131,6 +138,7 @@ type Rewrite struct {
 
 type Proxy struct {
 	Upstream           string            `yaml:"upstream"`
+	DynamicUpstream    string            `yaml:"dynamic_upstream,omitempty"`
 	Buffering          *bool             `yaml:"buffering,omitempty"`
 	BufferSize         string            `yaml:"buffer_size,omitempty"`
 	RequestBuffering   *bool             `yaml:"request_buffering,omitempty"`
@@ -145,6 +153,13 @@ type Proxy struct {
 	PassRequestHeaders *bool             `yaml:"pass_request_headers,omitempty"`
 	PassRequestBody    *bool             `yaml:"pass_request_body,omitempty"`
 	MaxTempFileSize    string            `yaml:"max_temp_file_size,omitempty"`
+}
+
+func (p *Proxy) GetDynamicUpstream() string {
+	if p == nil {
+		return ""
+	}
+	return strings.TrimPrefix(p.DynamicUpstream, "$")
 }
 
 type Upstream struct {
@@ -170,6 +185,8 @@ type Upstream struct {
 	NextUpstream        string             `yaml:"next_upstream,omitempty"`
 	NextUpstreamTries   int                `yaml:"next_upstream_tries,omitempty"`
 	NextUpstreamTimeout int                `yaml:"next_upstream_timeout,omitempty"`
+	Resolve             bool               `yaml:"resolve,omitempty"`
+	Zone                string             `yaml:"zone,omitempty"`
 }
 
 type ProxySSL struct {
@@ -191,9 +208,10 @@ type HealthCheckConfig struct {
 }
 
 type CacheConfig struct {
-	Enabled bool `yaml:"enabled"`
-	TTL     int  `yaml:"ttl,omitempty"`
-	MaxSize int  `yaml:"max_size,omitempty"`
+	Enabled  bool   `yaml:"enabled"`
+	TTL      int    `yaml:"ttl,omitempty"`
+	MaxSize  int    `yaml:"max_size,omitempty"`
+	CachePath string `yaml:"cache_path,omitempty"`
 }
 
 func (h *HealthCheckConfig) GetInterval() int {
@@ -246,10 +264,11 @@ func (u *Upstream) GetIdleTimeout() int {
 }
 
 type UpstreamServer struct {
-	Addr   string `yaml:"addr"`
-	Weight int    `yaml:"weight,omitempty"`
-	Backup bool   `yaml:"backup,omitempty"`
-	Down   bool   `yaml:"down,omitempty"`
+	Addr      string `yaml:"addr"`
+	Weight    int    `yaml:"weight,omitempty"`
+	Backup    bool   `yaml:"backup,omitempty"`
+	Down      bool   `yaml:"down,omitempty"`
+	SlowStart int    `yaml:"slow_start,omitempty"`
 }
 
 type ModulesConfig struct {
@@ -405,10 +424,11 @@ type HeaderEntry struct {
 }
 
 type AccessLogConfig struct {
-	Enabled    bool   `yaml:"enabled"`
-	Output     string `yaml:"output,omitempty"`
-	Format     string `yaml:"format,omitempty"`
-	Subrequest bool   `yaml:"subrequest,omitempty"`
+	Enabled       bool   `yaml:"enabled"`
+	Output        string `yaml:"output,omitempty"`
+	Format        string `yaml:"format,omitempty"`
+	Subrequest    bool   `yaml:"subrequest,omitempty"`
+	ConditionalLog string `yaml:"conditional_log,omitempty"`
 }
 
 func (c *AccessLogConfig) GetOutput() string {
@@ -423,6 +443,13 @@ func (c *AccessLogConfig) GetFormat() string {
 		return ""
 	}
 	return c.Format
+}
+
+func (c *AccessLogConfig) GetConditionalLog() string {
+	if c == nil {
+		return ""
+	}
+	return c.ConditionalLog
 }
 
 type ErrorLogConfig struct {

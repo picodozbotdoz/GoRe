@@ -5,13 +5,97 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
 )
 
-var reqStartFn func()
-var reqDoneFn func()
+type Condition struct {
+	Variable string
+	Operator string
+	Value    string
+}
+
+func ParseCondition(s string) (*Condition, error) {
+	if s == "" {
+		return nil, nil
+	}
+
+	s = strings.TrimSpace(s)
+	if !strings.HasPrefix(s, "$") {
+		return nil, fmt.Errorf("condition must start with $: %s", s)
+	}
+
+	operators := []string{"!=", ">=", "<=", ">", "<", "="}
+	for _, op := range operators {
+		if idx := strings.Index(s, " "+op+" "); idx > 0 {
+			variable := s[:idx]
+			variable = strings.TrimPrefix(variable, "$")
+			rest := s[idx+len(op)+2:]
+			return &Condition{
+				Variable: variable,
+				Operator: op,
+				Value:    rest,
+			}, nil
+		}
+	}
+
+	return nil, fmt.Errorf("invalid condition format: %s", s)
+}
+
+func ShouldLog(c *Condition, entry accessEntry) bool {
+	if c == nil {
+		return true
+	}
+
+	var actual string
+	switch c.Variable {
+	case "status":
+		actual = strconv.Itoa(entry.Status)
+	case "request_method":
+		parts := strings.SplitN(entry.Request, " ", 2)
+		if len(parts) > 0 {
+			actual = parts[0]
+		}
+	default:
+		return true
+	}
+
+	expectedInt, errExpected := strconv.Atoi(c.Value)
+	actualInt, errActual := strconv.Atoi(actual)
+
+	if errExpected == nil && errActual == nil {
+		switch c.Operator {
+		case "=":
+			return actualInt == expectedInt
+		case "!=":
+			return actualInt != expectedInt
+		case ">":
+			return actualInt > expectedInt
+		case ">=":
+			return actualInt >= expectedInt
+		case "<":
+			return actualInt < expectedInt
+		case "<=":
+			return actualInt <= expectedInt
+		}
+	}
+
+	switch c.Operator {
+	case "=":
+		return actual == c.Value
+	case "!=":
+		return actual != c.Value
+	default:
+		return true
+	}
+}
+
+var (
+	reqStartFn func()
+	reqDoneFn  func()
+)
 
 func SetRequestTracker(startFn, doneFn func()) {
 	reqStartFn = startFn
@@ -21,9 +105,10 @@ func SetRequestTracker(startFn, doneFn func()) {
 const defaultAccessFormat = `$remote_addr - [$time_local] "$request" $status $body_bytes_sent "$http_referer" "$http_user_agent"`
 
 type accessLogger struct {
-	format string
-	writer io.Writer
-	mu     sync.Mutex
+	format    string
+	writer    io.Writer
+	mu        sync.Mutex
+	condition *Condition
 }
 
 func newAccessLogger(cfg *AccessLogConfig) *accessLogger {
@@ -52,7 +137,21 @@ func newAccessLogger(cfg *AccessLogConfig) *accessLogger {
 		}
 	}
 
-	return &accessLogger{format: format, writer: w}
+	var condition *Condition
+	if cfg.ConditionalLog != "" {
+		var err error
+		condition, err = ParseCondition(cfg.ConditionalLog)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "access_log: invalid condition %q: %v\n", cfg.ConditionalLog, err)
+			condition = nil
+		}
+	}
+
+	return &accessLogger{format: format, writer: w, condition: condition}
+}
+
+func (a *accessLogger) shouldLog(entry accessEntry) bool {
+	return ShouldLog(a.condition, entry)
 }
 
 func (a *accessLogger) log(entry accessEntry) {
@@ -116,16 +215,17 @@ func (rw *responseWriter) Unwrap() http.ResponseWriter {
 	return rw.ResponseWriter
 }
 
-func AccessMiddleware(enabled bool, output, format string, subrequest bool) func(http.Handler) http.Handler {
+func AccessMiddleware(enabled bool, output, format string, subrequest bool, conditionalLog string) func(http.Handler) http.Handler {
 	if !enabled {
 		return func(next http.Handler) http.Handler { return next }
 	}
 
 	logger := newAccessLogger(&AccessLogConfig{
-		Enabled:    enabled,
-		Output:     output,
-		Format:     format,
-		Subrequest: subrequest,
+		Enabled:       enabled,
+		Output:        output,
+		Format:        format,
+		Subrequest:    subrequest,
+		ConditionalLog: conditionalLog,
 	})
 	if logger == nil {
 		return func(next http.Handler) http.Handler { return next }
@@ -181,7 +281,9 @@ func AccessMiddleware(enabled bool, output, format string, subrequest bool) func
 				entry.HTTPUserAgent = "-"
 			}
 
-			logger.log(entry)
+			if logger.shouldLog(entry) {
+				logger.log(entry)
+			}
 		})
 	}
 }

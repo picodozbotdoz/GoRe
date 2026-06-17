@@ -1,10 +1,12 @@
 package server
 
 import (
+	"bytes"
 	"context"
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
+	"io"
 	"net"
 	"net/http"
 	"os"
@@ -16,6 +18,7 @@ import (
 	"time"
 
 	"github.com/quic-go/quic-go/http3"
+	"golang.org/x/crypto/ocsp"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
 
@@ -57,11 +60,16 @@ func (s *Server) initUpstreams() {
 		servers := make([]*proxy.Server, len(upstreamCfg.Servers))
 		for i, srv := range upstreamCfg.Servers {
 			servers[i] = &proxy.Server{
-				Addr:   srv.Addr,
-				Weight: srv.Weight,
-				Backup: srv.Backup,
-				Down:   srv.Down,
+				Addr:      srv.Addr,
+				Weight:    srv.Weight,
+				Backup:    srv.Backup,
+				Down:      srv.Down,
+				SlowStart: srv.SlowStart,
 			}
+			if servers[i].Weight == 0 {
+				servers[i].Weight = 1
+			}
+			servers[i].FullWeight = servers[i].Weight
 		}
 		var proxySSL *proxy.ProxySSLConfig
 		if upstreamCfg.ProxySSL != nil {
@@ -94,7 +102,7 @@ func (s *Server) initUpstreams() {
 			KeepaliveTimeout:  upstreamCfg.KeepaliveTimeout,
 			KeepaliveRequests: upstreamCfg.KeepaliveRequests,
 			Resolver:          s.cfg.Modules.Resolver,
-		}, upstreamCfg.SetHeaders, upstreamCfg.GetBuffering(), upstreamCfg.GetRetries(), 0, "", upstreamCfg.NextUpstream, upstreamCfg.NextUpstreamTries, upstreamCfg.NextUpstreamTimeout, nil, nil, nil, false, nil, "", "", "", nil, nil, proxySSL, cacheCfg, upstreamCfg.ProxyProtocol, config.ParseSize(upstreamCfg.MaxTempFileSize))
+		}, upstreamCfg.SetHeaders, upstreamCfg.GetBuffering(), upstreamCfg.GetRetries(), 0, "", upstreamCfg.NextUpstream, upstreamCfg.NextUpstreamTries, upstreamCfg.NextUpstreamTimeout, nil, nil, nil, false, nil, "", "", "", nil, nil, proxySSL, cacheCfg, upstreamCfg.ProxyProtocol, config.ParseSize(upstreamCfg.MaxTempFileSize), upstreamCfg.Resolve, upstreamCfg.Zone)
 		if upstreamCfg.HealthCheck != nil && upstreamCfg.HealthCheck.Enabled {
 			proxy.StartHealthCheck(servers, upstreamCfg.HealthCheck.GetInterval(), upstreamCfg.HealthCheck.Path)
 		}
@@ -114,10 +122,44 @@ func (s *Server) initRoutes() {
 	}
 }
 
+func resolveVariable(r *http.Request, variable string) string {
+	variable = strings.TrimPrefix(variable, "$")
+	switch {
+	case strings.HasPrefix(variable, "http_"):
+		headerName := strings.TrimPrefix(variable, "http_")
+		headerName = strings.ReplaceAll(headerName, "_", "-")
+		return r.Header.Get(headerName)
+	case variable == "remote_addr":
+		return r.RemoteAddr
+	case variable == "host":
+		return r.Host
+	case variable == "request_uri":
+		return r.URL.RequestURI()
+	case variable == "method":
+		return r.Method
+	default:
+		return r.Header.Get(variable)
+	}
+}
+
 func (s *Server) buildLocationHandler(loc config.Location) http.Handler {
 	var handler http.Handler
 	if loc.Proxy != nil {
-		if upstream, ok := s.upstreams[loc.Proxy.Upstream]; ok {
+		if dynUpstream := loc.Proxy.GetDynamicUpstream(); dynUpstream != "" {
+			upstreams := s.upstreams
+			handler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				value := resolveVariable(r, dynUpstream)
+				if upstream, ok := upstreams[value]; ok {
+					upstream.ServeHTTP(w, r)
+					return
+				}
+				if upstream, ok := upstreams[loc.Proxy.Upstream]; ok {
+					upstream.ServeHTTP(w, r)
+					return
+				}
+				http.Error(w, "Bad Gateway", http.StatusBadGateway)
+			})
+		} else if upstream, ok := s.upstreams[loc.Proxy.Upstream]; ok {
 			handler = upstream
 		}
 	} else if loc.Alias != "" {
@@ -306,6 +348,171 @@ func (s *Server) buildLocationHandler(loc config.Location) http.Handler {
 	return modules.BuildChain(&s.cfg.Modules, handler)
 }
 
+func parseECDHCurves(names string) []tls.CurveID {
+	if names == "" {
+		return nil
+	}
+	nameMap := map[string]tls.CurveID{
+		"X25519": tls.X25519,
+		"P-256":  tls.CurveP256,
+		"P-384":  tls.CurveP384,
+		"P-521":  tls.CurveP521,
+	}
+	var curves []tls.CurveID
+	for _, name := range strings.Split(names, ":") {
+		name = strings.TrimSpace(name)
+		if id, ok := nameMap[name]; ok {
+			curves = append(curves, id)
+		}
+	}
+	return curves
+}
+
+type ocspStapler struct {
+	mu       sync.RWMutex
+	response []byte
+	rawCert  []byte
+	rawIssuer *x509.Certificate
+	cert     tls.Certificate
+	verify   bool
+}
+
+func newOCSPStapler(cert tls.Certificate, verify bool) (*ocspStapler, error) {
+	leaf, err := x509.ParseCertificate(cert.Certificate[0])
+	if err != nil {
+		return nil, fmt.Errorf("parse leaf cert: %w", err)
+	}
+
+	var issuer *x509.Certificate
+	if len(cert.Certificate) > 1 {
+		issuer, err = x509.ParseCertificate(cert.Certificate[1])
+		if err != nil {
+			return nil, fmt.Errorf("parse issuer cert: %w", err)
+		}
+	} else {
+		roots := x509.NewCertPool()
+		if !verify {
+			roots.AddCert(leaf)
+		}
+		candidates, err := leaf.Verify(x509.VerifyOptions{
+			Roots:     roots,
+			KeyUsages: []x509.ExtKeyUsage{x509.ExtKeyUsageAny},
+		})
+		if err == nil && len(candidates) > 0 && len(candidates[0]) > 1 {
+			issuer = candidates[0][1]
+		}
+	}
+
+	if issuer == nil {
+		return nil, fmt.Errorf("cannot determine issuer certificate")
+	}
+
+	s := &ocspStapler{
+		rawCert:  cert.Certificate[0],
+		rawIssuer: issuer,
+		cert:     cert,
+		verify:   verify,
+	}
+
+	s.refresh()
+
+	return s, nil
+}
+
+func (s *ocspStapler) refresh() {
+	leaf, err := x509.ParseCertificate(s.rawCert)
+	if err != nil {
+		gorelog.Infof("OCSP: failed to parse leaf cert: %v", err)
+		return
+	}
+
+	if len(leaf.OCSPServer) == 0 {
+		gorelog.Infof("OCSP: no OCSP responder URLs in certificate")
+		return
+	}
+
+	ocspReq, err := ocsp.CreateRequest(leaf, s.rawIssuer, &ocsp.RequestOptions{})
+	if err != nil {
+		gorelog.Infof("OCSP: failed to create request: %v", err)
+		return
+	}
+
+	var rawResponse []byte
+	for _, ocspURL := range leaf.OCSPServer {
+		rawResponse, err = s.fetchOCSP(ocspURL, ocspReq)
+		if err != nil {
+			gorelog.Infof("OCSP: request to %s failed: %v", ocspURL, err)
+			continue
+		}
+		break
+	}
+	if err != nil {
+		gorelog.Infof("OCSP: all responders failed, stapling unavailable")
+		return
+	}
+
+	resp, err := ocsp.ParseResponseForCert(rawResponse, leaf, s.rawIssuer)
+	if err != nil {
+		gorelog.Infof("OCSP: invalid response: %v", err)
+		return
+	}
+
+	if resp.Status != ocsp.Good && resp.Status != ocsp.Revoked {
+		gorelog.Infof("OCSP: unexpected status %d", resp.Status)
+		return
+	}
+
+	s.mu.Lock()
+	s.response = rawResponse
+	s.mu.Unlock()
+
+	gorelog.Infof("OCSP: stapled response cached (status=%d, expiry=%s)", resp.Status, resp.NextUpdate.Format(time.RFC3339))
+}
+
+func (s *ocspStapler) fetchOCSP(url string, req []byte) ([]byte, error) {
+	httpReq, err := http.NewRequest("POST", url, bytes.NewReader(req))
+	if err != nil {
+		return nil, err
+	}
+	httpReq.Header.Set("Content-Type", "application/ocsp-request")
+	httpReq.Header.Set("Accept", "application/ocsp-response")
+
+	client := &http.Client{Timeout: 10 * time.Second}
+	resp, err := client.Do(httpReq)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("HTTP %d", resp.StatusCode)
+	}
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+	return body, nil
+}
+
+func (s *ocspStapler) getStapledResponse(cert *x509.Certificate) *tls.Certificate {
+	s.mu.RLock()
+	response := s.response
+	s.mu.RUnlock()
+
+	if len(response) == 0 {
+		return nil
+	}
+
+	c := tls.Certificate{
+		Certificate: s.cert.Certificate,
+		PrivateKey:  s.cert.PrivateKey,
+		Leaf:        s.cert.Leaf,
+	}
+	c.OCSPStaple = response
+	return &c
+}
+
 func (s *Server) buildTLSConfig(listen *config.Listen) *tls.Config {
 	cert, err := tls.LoadX509KeyPair(listen.TLS.Cert, listen.TLS.Key)
 	if err != nil {
@@ -349,6 +556,11 @@ func (s *Server) buildTLSConfig(listen *config.Listen) *tls.Config {
 			timeout: time.Duration(listen.TLS.GetSessionTimeout()) * time.Second,
 		}
 	}
+	if listen.TLS.ECDHCurve != "" {
+		if curves := parseECDHCurves(listen.TLS.ECDHCurve); len(curves) > 0 {
+			tlsConfig.CurvePreferences = curves
+		}
+	}
 	if listen.TLS.ClientCertificate != "" {
 		caCert, err := os.ReadFile(listen.TLS.ClientCertificate)
 		if err == nil {
@@ -363,6 +575,33 @@ func (s *Server) buildTLSConfig(listen *config.Listen) *tls.Config {
 	if listen.TLS.RejectHandshake {
 		tlsConfig.VerifyConnection = func(state tls.ConnectionState) error {
 			return fmt.Errorf("tls handshake rejected by configuration")
+		}
+	}
+	if listen.TLS.Stapling {
+		stapler, err := newOCSPStapler(cert, listen.TLS.StaplingVerify)
+		if err != nil {
+			gorelog.Infof("OCSP stapling init failed: %v (stapling disabled)", err)
+		} else {
+		tlsConfig.GetCertificate = func(clientHello *tls.ClientHelloInfo) (*tls.Certificate, error) {
+			for _, c := range tlsConfig.Certificates {
+				leaf, parseErr := x509.ParseCertificate(c.Certificate[0])
+				if parseErr != nil {
+					continue
+				}
+				tlsLeaf := &tls.Certificate{
+					Certificate: c.Certificate,
+					Leaf:        leaf,
+				}
+				if err := clientHello.SupportsCertificate(tlsLeaf); err == nil {
+					stapled := stapler.getStapledResponse(leaf)
+					if stapled != nil {
+						return stapled, nil
+					}
+					break
+				}
+			}
+			return &tlsConfig.Certificates[0], nil
+		}
 		}
 	}
 	return tlsConfig
