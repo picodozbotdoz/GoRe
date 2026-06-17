@@ -34,12 +34,12 @@ Tracked, verified, runnable configuration examples. Each example is in `examples
 
 | # | Feature | Dir | Config | Before | After | Test | Verified | Logging | Notes |
 |---|---------|-----|--------|--------|-------|------|----------|---------|-------|
-| 8 | Rate limiting | `examples/rate-limit/` | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | Per-IP token bucket |
-| 9 | Access control | `examples/access-control/` | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | CIDR allow/deny rules |
-| 10 | Basic auth | `examples/basic-auth/` | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | Username/password protection |
-| 11 | Auth subrequest | `examples/auth-request/` | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | Delegate auth to external service |
-| 12 | Body size limit | `examples/body-limit/` | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | Reject oversized POST bodies |
-| 13 | Connection limit | `examples/conn-limit/` | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | Per-IP concurrent connections |
+| 8 | Rate limiting | `examples/rate-limit/` | ✅ | ✅ | ✅ | ✅ | ✅ | ⬜ | Per-IP token bucket |
+| 9 | Access control | `examples/access-control/` | ✅ | ✅ | ✅ | ✅ | ✅ | ⬜ | CIDR allow/deny rules |
+| 10 | Basic auth | `examples/basic-auth/` | ✅ | ✅ | ✅ | ✅ | ✅ | ⬜ | Username/password protection |
+| 11 | Auth subrequest | `examples/auth-request/` | ✅ | ✅ | ✅ | ✅ | ✅ | ⬜ | Delegate auth to external service |
+| 12 | Body size limit | `examples/body-limit/` | ✅ | ✅ | ✅ | ✅ | ✅ | ⬜ | Reject oversized POST bodies |
+| 13 | Connection limit | `examples/conn-limit/` | ✅ | ✅ | ✅ | ✅ | ✅ | ⬜ | Per-IP concurrent connections |
 
 ## Priority 4 — Proxy Features
 
@@ -93,9 +93,10 @@ Tracked, verified, runnable configuration examples. Each example is in `examples
 |----------|-------|------|---|
 | P1 Core | 3 | 3 | 100% |
 | P2 Protocol | 4 | 4 | 100% |
+| P3 Security | 6 | 6 | 100% |
 | P3 Security | 6 | 0 | 0% |
 | P4 Proxy | 9 | 0 | 0% |
 | P5 Advanced | 11 | 0 | 0% |
 | P6 Observability | 3 | 0 | 0% |
 | P7 Full Stack | 3 | 0 | 0% |
-| **Total** | **39** | **7** | **18%** |
+| **Total** | **39** | **13** | **33%** |
