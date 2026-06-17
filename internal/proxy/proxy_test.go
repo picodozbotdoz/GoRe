@@ -6,6 +6,7 @@ import (
 	"strings"
 	"sync/atomic"
 	"testing"
+	"time"
 )
 
 func TestRoundRobinBalancer(t *testing.T) {
@@ -46,7 +47,7 @@ func TestUpstreamServeHTTP(t *testing.T) {
 	defer backend.Close()
 
 	servers := []*Server{{Addr: backend.Listener.Addr().String(), Weight: 1}}
-	upstream := NewUpstream("test", servers, "round-robin", nil, nil, true, 0, 0, "", "", 0, 0, nil, nil, nil, false, nil, "", "", "", nil, nil, nil, nil, false, 0)
+	upstream := NewUpstream("test", servers, "round-robin", nil, nil, true, 0, 0, "", "", 0, 0, nil, nil, nil, false, nil, "", "", "", nil, nil, nil, nil, false, 0, false, "")
 
 	req := httptest.NewRequest("GET", "/", nil)
 	w := httptest.NewRecorder()
@@ -69,7 +70,7 @@ func TestProxyRedirect(t *testing.T) {
 
 	servers := []*Server{{Addr: backend.Listener.Addr().String(), Weight: 1}}
 	boolTrue := true
-	upstream := NewUpstream("test", servers, "round-robin", nil, nil, true, 0, 0, "old.example.com new.example.com", "", 0, 0, &boolTrue, &boolTrue, nil, false, nil, "", "", "", nil, nil, nil, nil, false, 0)
+	upstream := NewUpstream("test", servers, "round-robin", nil, nil, true, 0, 0, "old.example.com new.example.com", "", 0, 0, &boolTrue, &boolTrue, nil, false, nil, "", "", "", nil, nil, nil, nil, false, 0, false, "")
 
 	req := httptest.NewRequest("GET", "/redirect", nil)
 	w := httptest.NewRecorder()
@@ -96,7 +97,7 @@ func TestProxyPassRequestHeadersDisabled(t *testing.T) {
 
 	servers := []*Server{{Addr: backend.Listener.Addr().String(), Weight: 1}}
 	boolFalse := false
-	upstream := NewUpstream("test", servers, "round-robin", nil, map[string]string{"X-Custom": "value"}, true, 0, 0, "", "", 0, 0, &boolFalse, nil, nil, false, nil, "", "", "", nil, nil, nil, nil, false, 0)
+	upstream := NewUpstream("test", servers, "round-robin", nil, map[string]string{"X-Custom": "value"}, true, 0, 0, "", "", 0, 0, &boolFalse, nil, nil, false, nil, "", "", "", nil, nil, nil, nil, false, 0, false, "")
 
 	req := httptest.NewRequest("GET", "/", nil)
 	w := httptest.NewRecorder()
@@ -125,7 +126,7 @@ func TestProxyPassRequestBodyDisabled(t *testing.T) {
 
 	servers := []*Server{{Addr: backend.Listener.Addr().String(), Weight: 1}}
 	boolFalse := false
-	upstream := NewUpstream("test", servers, "round-robin", nil, nil, true, 0, 0, "", "", 0, 0, nil, &boolFalse, nil, false, nil, "", "", "", nil, nil, nil, nil, false, 0)
+	upstream := NewUpstream("test", servers, "round-robin", nil, nil, true, 0, 0, "", "", 0, 0, nil, &boolFalse, nil, false, nil, "", "", "", nil, nil, nil, nil, false, 0, false, "")
 
 	req := httptest.NewRequest("POST", "/", strings.NewReader("test body"))
 	w := httptest.NewRecorder()
@@ -316,5 +317,57 @@ func TestResolverConfig(t *testing.T) {
 		Idle:     60,
 		Resolver: "8.8.8.8",
 	}
-	_ = NewUpstream("test", servers, "round-robin", tc, nil, true, 0, 0, "", "", 0, 0, nil, nil, nil, false, nil, "", "", "", nil, nil, nil, nil, false, 0)
+	_ = NewUpstream("test", servers, "round-robin", tc, nil, true, 0, 0, "", "", 0, 0, nil, nil, nil, false, nil, "", "", "", nil, nil, nil, nil, false, 0, false, "")
+}
+
+func TestResolveEnabled(t *testing.T) {
+	servers := []*Server{{Addr: "127.0.0.1:8080", Weight: 1}}
+	u := NewUpstream("test", servers, "round-robin", nil, nil, true, 0, 0, "", "", 0, 0, nil, nil, nil, false, nil, "", "", "", nil, nil, nil, nil, false, 0, true, "backend_zone")
+	if !u.Resolve {
+		t.Error("Resolve should be true")
+	}
+	if u.Zone != "backend_zone" {
+		t.Errorf("Zone = %q, want backend_zone", u.Zone)
+	}
+}
+
+func TestSlowStartWeight(t *testing.T) {
+	s := &Server{
+		Addr:       "127.0.0.1:8080",
+		Weight:     5,
+		FullWeight: 5,
+		SlowStart:  10,
+		CreatedAt:  time.Now().Unix() - 5,
+	}
+	w := s.GetEffectiveWeight()
+	if w < 2 || w > 3 {
+		t.Errorf("effective weight after 5s of 10s slow_start = %d, want ~2-3", w)
+	}
+}
+
+func TestSlowStartCompleted(t *testing.T) {
+	s := &Server{
+		Addr:       "127.0.0.1:8080",
+		Weight:     5,
+		FullWeight: 5,
+		SlowStart:  10,
+		CreatedAt:  time.Now().Unix() - 20,
+	}
+	w := s.GetEffectiveWeight()
+	if w != 5 {
+		t.Errorf("effective weight after slow_start complete = %d, want 5", w)
+	}
+}
+
+func TestSlowStartNoSlowStart(t *testing.T) {
+	s := &Server{
+		Addr:       "127.0.0.1:8080",
+		Weight:     5,
+		FullWeight: 5,
+		SlowStart:  0,
+	}
+	w := s.GetEffectiveWeight()
+	if w != 5 {
+		t.Errorf("effective weight without slow_start = %d, want 5", w)
+	}
 }

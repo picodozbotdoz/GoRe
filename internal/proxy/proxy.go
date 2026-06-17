@@ -55,6 +55,8 @@ type Upstream struct {
 	BufferSize          int
 	ProxyProtocol       bool
 	MaxTempFileSize     int64
+	Resolve             bool
+	Zone                string
 	cacheLocks          sync.Map
 }
 
@@ -81,7 +83,7 @@ type ProxySSLConfig struct {
 	Name               string
 }
 
-func NewUpstream(name string, servers []*Server, strategy string, timeouts *TimeoutConfig, setHeaders map[string]string, buffered bool, maxRetries int, bufferSize int, redirect string, nextUpstream string, nextUpstreamTries int, nextUpstreamTimeout int, passRequestHeaders *bool, passRequestBody *bool, requestBuffering *bool, interceptErrors bool, errorPages map[int]string, cookieDomain string, cookiePath string, method string, hideHeaders []string, socketKeepalive *bool, proxySSL *ProxySSLConfig, cacheConfig *CacheConfig, proxyProtocol bool, maxTempFileSize int64) *Upstream {
+func NewUpstream(name string, servers []*Server, strategy string, timeouts *TimeoutConfig, setHeaders map[string]string, buffered bool, maxRetries int, bufferSize int, redirect string, nextUpstream string, nextUpstreamTries int, nextUpstreamTimeout int, passRequestHeaders *bool, passRequestBody *bool, requestBuffering *bool, interceptErrors bool, errorPages map[int]string, cookieDomain string, cookiePath string, method string, hideHeaders []string, socketKeepalive *bool, proxySSL *ProxySSLConfig, cacheConfig *CacheConfig, proxyProtocol bool, maxTempFileSize int64, resolve bool, zone string) *Upstream {
 	var balancer Balancer
 	switch strategy {
 	case "least-conn":
@@ -122,6 +124,8 @@ func NewUpstream(name string, servers []*Server, strategy string, timeouts *Time
 		CacheConfig:        cacheConfig,
 		ProxyProtocol:      proxyProtocol,
 		MaxTempFileSize:    maxTempFileSize,
+		Resolve:            resolve,
+		Zone:               zone,
 	}
 	u.Proxy = &httputil.ReverseProxy{
 		Director:     u.director,
@@ -308,17 +312,23 @@ func (u *Upstream) transport(tc *TimeoutConfig) *http.Transport {
 	}
 
 	var resolver *net.Resolver
-	if tc.Resolver != "" {
+	if u.Resolve || tc.Resolver != "" {
 		resolverAddr := tc.Resolver
-		if !strings.Contains(resolverAddr, ":") {
-			resolverAddr = resolverAddr + ":53"
-		}
-		resolver = &net.Resolver{
-			PreferGo: true,
-			Dial: func(ctx context.Context, network, address string) (net.Conn, error) {
-				d := net.Dialer{Timeout: 5 * time.Second}
-				return d.DialContext(ctx, "udp", resolverAddr)
-			},
+		if resolverAddr == "" {
+			resolver = &net.Resolver{
+				PreferGo: true,
+			}
+		} else {
+			if !strings.Contains(resolverAddr, ":") {
+				resolverAddr = resolverAddr + ":53"
+			}
+			resolver = &net.Resolver{
+				PreferGo: true,
+				Dial: func(ctx context.Context, network, address string) (net.Conn, error) {
+					d := net.Dialer{Timeout: 5 * time.Second}
+					return d.DialContext(ctx, "udp", resolverAddr)
+				},
+			}
 		}
 		dialer.Resolver = resolver
 	}

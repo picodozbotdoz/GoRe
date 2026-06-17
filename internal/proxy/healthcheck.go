@@ -40,6 +40,9 @@ func checkServer(client *http.Client, s *Server, path string) {
 		}
 		resp.Body.Close()
 		if resp.StatusCode >= 200 && resp.StatusCode < 500 {
+			if atomic.LoadInt32(&s.Healthy) == 0 && s.SlowStart > 0 {
+				s.CreatedAt = time.Now().Unix()
+			}
 			atomic.StoreInt32(&s.Healthy, 1)
 		} else {
 			atomic.StoreInt32(&s.Healthy, 0)
@@ -53,5 +56,8 @@ func checkServer(client *http.Client, s *Server, path string) {
 		return
 	}
 	conn.Close()
+	if atomic.LoadInt32(&s.Healthy) == 0 && s.SlowStart > 0 {
+		s.CreatedAt = time.Now().Unix()
+	}
 	atomic.StoreInt32(&s.Healthy, 1)
 }

@@ -7,6 +7,7 @@ import (
 	"strings"
 	"sync"
 	"sync/atomic"
+	"time"
 )
 
 type Server struct {
@@ -16,6 +17,9 @@ type Server struct {
 	ActiveConns int64
 	Backup      bool
 	Down        bool
+	SlowStart   int
+	CreatedAt   int64
+	FullWeight  int
 }
 
 type Balancer interface {
@@ -240,4 +244,22 @@ func fnvHash(s string) uint32 {
 	h := fnv.New32a()
 	h.Write([]byte(s))
 	return h.Sum32()
+}
+
+func (s *Server) GetEffectiveWeight() int {
+	if s.SlowStart <= 0 || s.FullWeight <= 0 {
+		return s.Weight
+	}
+	elapsed := time.Now().Unix() - s.CreatedAt
+	if elapsed >= int64(s.SlowStart) {
+		return s.FullWeight
+	}
+	if elapsed <= 0 {
+		return 1
+	}
+	w := int(float64(s.FullWeight) * float64(elapsed) / float64(s.SlowStart))
+	if w < 1 {
+		w = 1
+	}
+	return w
 }
