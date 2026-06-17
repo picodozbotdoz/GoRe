@@ -8,6 +8,10 @@ import (
 )
 
 func New(authURL string) func(http.Handler) http.Handler {
+	return NewWithSet(authURL, nil)
+}
+
+func NewWithSet(authURL string, headerMap map[string]string) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			subReq, err := http.NewRequestWithContext(r.Context(), http.MethodGet, authURL, nil)
@@ -39,10 +43,18 @@ func New(authURL string) func(http.Handler) http.Handler {
 				return
 			}
 
-			for _, hv := range resp.Header.Values("X-Auth-Request-Set") {
-				parts := strings.SplitN(hv, "=", 2)
-				if len(parts) == 2 {
-					w.Header().Set(parts[0], strings.Trim(parts[1], "\""))
+			if headerMap != nil {
+				for authHeader, reqHeader := range headerMap {
+					if val := resp.Header.Get(authHeader); val != "" {
+						r.Header.Set(reqHeader, val)
+					}
+				}
+			} else {
+				for _, hv := range resp.Header.Values("X-Auth-Request-Set") {
+					parts := strings.SplitN(hv, "=", 2)
+					if len(parts) == 2 {
+						w.Header().Set(parts[0], strings.Trim(parts[1], "\""))
+					}
 				}
 			}
 
