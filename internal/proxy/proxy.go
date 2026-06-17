@@ -54,6 +54,7 @@ type Upstream struct {
 	SocketKeepalive     *bool
 	BufferSize          int
 	ProxyProtocol       bool
+	MaxTempFileSize     int64
 	cacheLocks          sync.Map
 }
 
@@ -80,7 +81,7 @@ type ProxySSLConfig struct {
 	Name               string
 }
 
-func NewUpstream(name string, servers []*Server, strategy string, timeouts *TimeoutConfig, setHeaders map[string]string, buffered bool, maxRetries int, bufferSize int, redirect string, nextUpstream string, nextUpstreamTries int, nextUpstreamTimeout int, passRequestHeaders *bool, passRequestBody *bool, requestBuffering *bool, interceptErrors bool, errorPages map[int]string, cookieDomain string, cookiePath string, method string, hideHeaders []string, socketKeepalive *bool, proxySSL *ProxySSLConfig, cacheConfig *CacheConfig, proxyProtocol bool) *Upstream {
+func NewUpstream(name string, servers []*Server, strategy string, timeouts *TimeoutConfig, setHeaders map[string]string, buffered bool, maxRetries int, bufferSize int, redirect string, nextUpstream string, nextUpstreamTries int, nextUpstreamTimeout int, passRequestHeaders *bool, passRequestBody *bool, requestBuffering *bool, interceptErrors bool, errorPages map[int]string, cookieDomain string, cookiePath string, method string, hideHeaders []string, socketKeepalive *bool, proxySSL *ProxySSLConfig, cacheConfig *CacheConfig, proxyProtocol bool, maxTempFileSize int64) *Upstream {
 	var balancer Balancer
 	switch strategy {
 	case "least-conn":
@@ -120,6 +121,7 @@ func NewUpstream(name string, servers []*Server, strategy string, timeouts *Time
 		ProxySSL:           proxySSL,
 		CacheConfig:        cacheConfig,
 		ProxyProtocol:      proxyProtocol,
+		MaxTempFileSize:    maxTempFileSize,
 	}
 	u.Proxy = &httputil.ReverseProxy{
 		Director:     u.director,
@@ -167,6 +169,10 @@ func (u *Upstream) director(req *http.Request) {
 	if u.RequestBuffering != nil && *u.RequestBuffering && req.Body != nil {
 		body, err := io.ReadAll(req.Body)
 		if err == nil {
+			if u.MaxTempFileSize > 0 && int64(len(body)) > u.MaxTempFileSize {
+				http.Error(nil, "Request Entity Too Large", http.StatusRequestEntityTooLarge)
+				return
+			}
 			req.Body = io.NopCloser(strings.NewReader(string(body)))
 			req.ContentLength = int64(len(body))
 		}

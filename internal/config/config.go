@@ -156,6 +156,10 @@ type Upstream struct {
 	HealthCheck         *HealthCheckConfig `yaml:"health_check,omitempty"`
 	Cache               *CacheConfig       `yaml:"cache,omitempty"`
 	ProxySSL            *ProxySSL          `yaml:"proxy_ssl,omitempty"`
+	ProxyProtocol       bool               `yaml:"proxy_protocol,omitempty"`
+	HideHeaders         []string           `yaml:"hide_headers,omitempty"`
+	SocketKeepalive     *bool              `yaml:"socket_keepalive,omitempty"`
+	MaxTempFileSize     string             `yaml:"max_temp_file_size,omitempty"`
 	Keepalive           int                `yaml:"keepalive,omitempty"`
 	KeepaliveTimeout    int                `yaml:"keepalive_timeout,omitempty"`
 	KeepaliveRequests   int                `yaml:"keepalive_requests,omitempty"`
@@ -166,9 +170,6 @@ type Upstream struct {
 	NextUpstream        string             `yaml:"next_upstream,omitempty"`
 	NextUpstreamTries   int                `yaml:"next_upstream_tries,omitempty"`
 	NextUpstreamTimeout int                `yaml:"next_upstream_timeout,omitempty"`
-	ProxyProtocol       bool               `yaml:"proxy_protocol,omitempty"`
-	HideHeaders         []string           `yaml:"hide_headers,omitempty"`
-	SocketKeepalive     *bool              `yaml:"socket_keepalive,omitempty"`
 }
 
 type ProxySSL struct {
