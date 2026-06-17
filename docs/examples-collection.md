@@ -59,17 +59,17 @@ Tracked, verified, runnable configuration examples. Each example is in `examples
 
 | # | Feature | Dir | Config | Before | After | Test | Verified | Logging | Notes |
 |---|---------|-----|--------|--------|-------|------|----------|---------|-------|
-| 23 | URL rewrite | `examples/rewrite/` | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | Regex path rewriting |
-| 24 | try_files | `examples/try-files/` | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | SPA fallback chain |
-| 25 | Cache-Control | `examples/cache-control/` | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | Browser/CDN cache headers |
-| 26 | ETag | `examples/etag/` | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | Automatic weak ETags |
-| 27 | Map directive | `examples/map/` | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | Regex header mapping |
-| 28 | Split clients | `examples/split-clients/` | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | A/B testing |
-| 29 | Mirror | `examples/mirror/` | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | Traffic shadowing |
-| 30 | Sub filter | `examples/sub-filter/` | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | Response body rewriting |
-| 31 | Real IP | `examples/real-ip/` | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | X-Forwarded-For extraction |
-| 32 | Gunzip | `examples/gunzip/` | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | Decompress for old clients |
-| 33 | TLS ciphers | `examples/tls-ciphers/` | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | Cipher suite configuration |
+| 23 | URL rewrite | `examples/rewrite/` | ✅ | ✅ | ✅ | ✅ | ✅ | ⬜ | Regex path rewriting |
+| 24 | try_files | `examples/try-files/` | ✅ | ✅ | ✅ | ✅ | ✅ | ⬜ | SPA fallback chain |
+| 25 | Cache-Control | `examples/cache-control/` | ✅ | ✅ | ✅ | ✅ | ✅ | ⬜ | Browser/CDN cache headers |
+| 26 | ETag | `examples/etag/` | ✅ | ✅ | ✅ | ✅ | ✅ | ⬜ | Automatic weak ETags |
+| 27 | Map directive | `examples/map/` | ✅ | ✅ | ✅ | ✅ | ✅ | ⬜ | Regex header mapping |
+| 28 | Split clients | `examples/split-clients/` | ✅ | ✅ | ✅ | ✅ | ✅ | ⬜ | A/B testing |
+| 29 | Mirror | `examples/mirror/` | ✅ | ✅ | ✅ | ✅ | ✅ | ⬜ | Traffic shadowing |
+| 30 | Sub filter | `examples/sub-filter/` | ✅ | ✅ | ✅ | ✅ | ✅ | ⬜ | Response body rewriting |
+| 31 | Real IP | `examples/real-ip/` | ✅ | ✅ | ✅ | ✅ | ✅ | ⬜ | X-Forwarded-For extraction |
+| 32 | Gunzip | `examples/gunzip/` | ✅ | ✅ | ✅ | ✅ | ✅ | ⬜ | Decompress for old clients |
+| 33 | TLS ciphers | `examples/tls-ciphers/` | ✅ | ✅ | ✅ | ✅ | ✅ | ⬜ | Cipher suite configuration |
 
 ## Priority 6 — Observability Features
 
@@ -95,8 +95,7 @@ Tracked, verified, runnable configuration examples. Each example is in `examples
 | P2 Protocol | 4 | 4 | 100% |
 | P3 Security | 6 | 6 | 100% |
 | P4 Proxy | 9 | 9 | 100% |
-| P4 Proxy | 9 | 0 | 0% |
-| P5 Advanced | 11 | 0 | 0% |
+| P5 Advanced | 11 | 11 | 100% |
 | P6 Observability | 3 | 0 | 0% |
 | P7 Full Stack | 3 | 0 | 0% |
-| **Total** | **39** | **22** | **56%** |
+| **Total** | **39** | **33** | **85%** |
