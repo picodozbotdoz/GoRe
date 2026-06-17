@@ -55,7 +55,12 @@ func (s *Server) initUpstreams() {
 	for name, upstreamCfg := range s.cfg.Upstreams {
 		servers := make([]*proxy.Server, len(upstreamCfg.Servers))
 		for i, srv := range upstreamCfg.Servers {
-			servers[i] = &proxy.Server{Addr: srv.Addr, Weight: srv.Weight}
+			servers[i] = &proxy.Server{
+				Addr:   srv.Addr,
+				Weight: srv.Weight,
+				Backup: srv.Backup,
+				Down:   srv.Down,
+			}
 		}
 		s.upstreams[name] = proxy.NewUpstream(name, servers, upstreamCfg.Strategy, &proxy.TimeoutConfig{
 			Connect:   upstreamCfg.GetConnectTimeout(),
@@ -63,7 +68,7 @@ func (s *Server) initUpstreams() {
 			Send:      upstreamCfg.GetSendTimeout(),
 			Idle:      upstreamCfg.GetIdleTimeout(),
 			Keepalive: upstreamCfg.Keepalive,
-		}, upstreamCfg.SetHeaders, upstreamCfg.GetBuffering(), upstreamCfg.GetRetries())
+		}, upstreamCfg.SetHeaders, upstreamCfg.GetBuffering(), upstreamCfg.GetRetries(), 0, "", upstreamCfg.NextUpstream, upstreamCfg.NextUpstreamTries, upstreamCfg.NextUpstreamTimeout, nil, nil)
 		if upstreamCfg.HealthCheck != nil && upstreamCfg.HealthCheck.Enabled {
 			proxy.StartHealthCheck(servers, upstreamCfg.HealthCheck.GetInterval(), upstreamCfg.HealthCheck.Path)
 		}
@@ -195,7 +200,8 @@ func (s *Server) buildLocationHandler(loc config.Location) http.Handler {
 		handler = authrequest.New(loc.AuthRequest)(handler)
 	}
 	if len(loc.SubFilter) > 0 {
-		handler = subfilter.New(loc.SubFilter)(handler)
+		once := loc.SubFilterOnce != nil && *loc.SubFilterOnce
+		handler = subfilter.New(loc.SubFilter, once, loc.SubFilterTypes)(handler)
 	}
 	if loc.Mirror != "" {
 		handler = mirror.New(loc.Mirror)(handler)
@@ -226,10 +232,22 @@ func (s *Server) Start() error {
 
 		h2cfg := s.buildHTTP2Config(listen)
 
+		idleTimeout := 120
+		if listen.KeepAliveTimeout > 0 {
+			idleTimeout = listen.KeepAliveTimeout
+		}
+		readTimeout := 30
+		if s.cfg.Modules.ClientHeaderTimeout > 0 {
+			readTimeout = s.cfg.Modules.ClientHeaderTimeout
+		}
+		writeTimeout := 30
+		if s.cfg.Modules.SendTimeout > 0 {
+			writeTimeout = s.cfg.Modules.SendTimeout
+		}
 		srv := &http.Server{
-			ReadTimeout:  30 * time.Second,
-			WriteTimeout: 30 * time.Second,
-			IdleTimeout:  120 * time.Second,
+			ReadTimeout:  time.Duration(readTimeout) * time.Second,
+			WriteTimeout: time.Duration(writeTimeout) * time.Second,
+			IdleTimeout:  time.Duration(idleTimeout) * time.Second,
 		}
 
 		if listen.TLS != nil {
