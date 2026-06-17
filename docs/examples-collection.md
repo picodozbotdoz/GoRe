@@ -75,9 +75,9 @@ Tracked, verified, runnable configuration examples. Each example is in `examples
 
 | # | Feature | Dir | Config | Before | After | Test | Verified | Logging | Notes |
 |---|---------|-----|--------|--------|-------|------|----------|---------|-------|
-| 34 | Access logging | `examples/access-log/` | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | nginx-format request logs |
-| 35 | Status endpoint | `examples/status/` | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | /status for monitoring |
-| 36 | Error logging levels | `examples/error-log/` | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | Debug/info/warn/error |
+| 34 | Access logging | `examples/access-log/` | ✅ | ✅ | ✅ | ✅ | ✅ | ⬜ | nginx-format request logs |
+| 35 | Status endpoint | `examples/status/` | ✅ | ✅ | ✅ | ✅ | ✅ | ⬜ | /status for monitoring |
+| 36 | Error logging levels | `examples/error-log/` | ✅ | ✅ | ✅ | ✅ | ✅ | ⬜ | Debug/info/warn/error |
 
 ## Priority 7 — Full Stack
 
@@ -96,6 +96,6 @@ Tracked, verified, runnable configuration examples. Each example is in `examples
 | P3 Security | 6 | 6 | 100% |
 | P4 Proxy | 9 | 9 | 100% |
 | P5 Advanced | 11 | 11 | 100% |
-| P6 Observability | 3 | 0 | 0% |
+| P6 Observability | 3 | 3 | 100% |
 | P7 Full Stack | 3 | 0 | 0% |
-| **Total** | **39** | **33** | **85%** |
+| **Total** | **39** | **36** | **92%** |
