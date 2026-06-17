@@ -9,9 +9,13 @@ import (
 )
 
 type Handler struct {
-	Level int
-	Types map[string]bool
-	pool  sync.Pool
+	Level     int
+	Types     map[string]bool
+	MinLength int
+	Vary      bool
+	Proxied   bool
+	Disable   string
+	pool      sync.Pool
 }
 
 func New(level int, types []string) *Handler {
@@ -35,6 +39,16 @@ func (h *Handler) ServeHTTP(next http.Handler) http.Handler {
 			return
 		}
 
+		if !h.Proxied && (r.Header.Get("X-Forwarded-For") != "" || r.Header.Get("X-Forwarded-Proto") != "" || r.Header.Get("Via") != "") {
+			next.ServeHTTP(w, r)
+			return
+		}
+
+		if h.Disable != "" && strings.Contains(r.Header.Get("User-Agent"), h.Disable) {
+			next.ServeHTTP(w, r)
+			return
+		}
+
 		var buf bytes.Buffer
 		gz := h.pool.Get().(*gzip.Writer)
 		gz.Reset(&buf)
@@ -52,10 +66,21 @@ func (h *Handler) ServeHTTP(next http.Handler) http.Handler {
 			return
 		}
 
+		if h.MinLength > 0 && buf.Len() < h.MinLength {
+			if rw.status == 0 {
+				rw.status = 200
+			}
+			w.WriteHeader(rw.status)
+			return
+		}
+
 		gz.Close()
 
 		w.Header().Set("Content-Encoding", "gzip")
 		w.Header().Del("Content-Length")
+		if h.Vary {
+			w.Header().Set("Vary", "Accept-Encoding")
+		}
 		if rw.status == 0 {
 			rw.status = 200
 		}
@@ -78,11 +103,10 @@ func (h *Handler) shouldCompress(contentType string) bool {
 
 type captureResponseWriter struct {
 	http.ResponseWriter
-	buf      *bytes.Buffer
-	gz       *gzip.Writer
-	status   int
-	written  bool
-	compress bool
+	buf     *bytes.Buffer
+	gz      *gzip.Writer
+	status  int
+	written bool
 }
 
 func (w *captureResponseWriter) Header() http.Header {
