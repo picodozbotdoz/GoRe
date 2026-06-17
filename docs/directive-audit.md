@@ -39,12 +39,12 @@ Cross-reference of every production-relevant nginx directive against GoRe's impl
 | `type` | `text/plain` | `default_type` | ✅ | — | — |
 | `default_type` | `text/plain` | `default_type` | ✅ | — | — |
 | `autoindex` | `off` | `autoindex: true/false` | ✅ | — | — |
-| `alias` | — | ❌ | ❌ | Path aliasing (different from root) | Medium |
-| `limit_except` | — | ❌ | ❌ | Restrict by HTTP method | Small |
+| `alias` | — | `location.alias` | ✅ | — | — |
+| `limit_except` | — | `location.limit_except` | ✅ | — | — |
 | `if` | — | ❌ | ❌ | Conditional blocks (nginx discourages this) | Large |
-| `internal` | — | ❌ | ❌ | Mark location as internal-only | Small |
-| `satisfy` | `all` | ❌ | ❌ | Combine auth and access rules | Medium |
-| `resolver` | system | ❌ | ❌ | DNS resolver for upstreams | Medium |
+| `internal` | — | `location.internal` | ✅ | — | — |
+| `satisfy` | `all` | `location.satisfy` | ✅ | Pass-through; per-location auth_basic needed for full logic | — |
+| `resolver` | system | `modules.resolver` | ✅ | — | — |
 | `merge_slashes` | `on` | `merge_slashes` | ✅ | — | — |
 | `ignore_invalid_headers` | `on` | N/A | ⛔ | Go's net/http handles this | — |
 | `underscores_in_headers` | `off` | N/A | ⛔ | Go's net/http handles this | — |
@@ -71,45 +71,45 @@ Cross-reference of every production-relevant nginx directive against GoRe's impl
 | `proxy_read_timeout` | `60s` | `read_timeout` | ✅ | — | — |
 | `proxy_buffering` | `on` | `buffering: true/false` | ✅ | — | — |
 | `proxy_buffer_size` | `4k/8k` | `buffer_size` | ✅ | — | — |
-| `proxy_buffers` | `8 4k/8k` | ❌ | ❌ | Number and size of buffers for response body | Small |
-| `proxy_busy_buffers_size` | `8k/16k` | ❌ | ❌ | Limit on response data buffered before sending | Small |
+| `proxy_buffers` | `8 4k/8k` | `proxy.buffers` | ✅ | — | — |
+| `proxy_busy_buffers_size` | `8k/16k` | `proxy.busy_buffers_size` | ✅ | — | — |
 | `proxy_cache` | `off` | `cache.enabled` | ✅ | — | — |
 | `proxy_cache_path` | — | ❌ | ❌ | Disk-based cache with levels/keys_zone | Large |
-| `proxy_cache_valid` | — | ❌ | ❌ | Cache validity per status code | Medium |
-| `proxy_cache_key` | `$scheme$proxy_host$request_uri` | ❌ | ❌ | Custom cache key | Small |
-| `proxy_no_cache` | — | ❌ | ❌ | Conditions to bypass cache | Small |
-| `proxy_cache_bypass` | — | ❌ | ❌ | Conditions to bypass cache | Small |
-| `proxy_cache_use_stale` | — | ❌ | ❌ | Serve stale on error/timeout | Medium |
-| `proxy_cache_lock` | `off` | ❌ | ❌ | Prevent cache stampede | Medium |
+| `proxy_cache_valid` | — | `cache.valid` | ✅ | — | — |
+| `proxy_cache_key` | `$scheme$proxy_host$request_uri` | `cache.key` | ✅ | — | — |
+| `proxy_no_cache` | — | `cache.no_cache` | ✅ | — | — |
+| `proxy_cache_bypass` | — | `cache.bypass` | ✅ | — | — |
+| `proxy_cache_use_stale` | — | `cache.use_stale` | ✅ | — | — |
+| `proxy_cache_lock` | `off` | `cache.lock` | ✅ | — | — |
 | `proxy_next_upstream` | `error timeout` | `next_upstream` | ✅ | Supports `error`, `timeout`, `invalid_header` flags | — |
 | `proxy_next_upstream_tries` | `0` | `next_upstream_tries` | ✅ | — | — |
 | `proxy_next_upstream_timeout` | `0` | `next_upstream_timeout` | ✅ | — | — |
 | `proxy_upstream` | — | ❌ | ❌ | Dynamic upstream selection | Large |
 | `proxy_http_version` | `1.0` | N/A | ⛔ | Go uses HTTP/1.1 by default; HTTP/2 via `ForceAttemptHTTP2` | — |
-| `proxy_socket_keepalive` | `off` | ❌ | ❌ | Enable TCP keepalive on upstream connections | Small |
+| `proxy_socket_keepalive` | `off` | `upstream.socket_keepalive` | ✅ | — | — |
 | `proxy_set_x_forwarded_for` | `on` | ✅ | ✅ | Via `set_headers` config | — |
 | `proxy_redirect` | `default` | `redirect` | ✅ | — | — |
-| `proxy_intercept_errors` | `off` | ❌ | ❌ | Intercept upstream error pages | Medium |
+| `proxy_intercept_errors` | `off` | `proxy.intercept_errors` | ✅ | — | — |
 | `proxy_store` | `off` | ❌ | ❌ | Store upstream responses to files | Large |
 | `proxy_store_access` | `user:rw ...` | ❌ | ❌ | File permissions for stored responses | Large |
-| `proxy_max_temp_file_size` | `1024m` | ❌ | ❌ | Max temp file size for buffering | Medium |
-| `proxy_request_buffering` | `on` | ❌ | ❌ | Buffer client request before sending upstream | Medium |
+| `proxy_max_temp_file_size` | `1024m` | `proxy.max_temp_file_size` | ✅ | — | — |
+| `proxy_request_buffering` | `on` | `proxy.request_buffering` | ✅ | — | — |
 | `proxy_temp_file_write_size` | `256k/512k` | ❌ | ❌ | Size of data written to temp files | Medium |
-| `proxy_ssl_verify` | `off` | ❌ | ❌ | Verify upstream TLS certificate | Small |
-| `proxy_ssl_certificate` | — | ❌ | ❌ | Client certificate for upstream mTLS | Medium |
-| `proxy_ssl_trusted_certificate` | — | ❌ | ❌ | Trusted CA for upstream verification | Medium |
-| `proxy_ssl_protocols` | `TLSv1 TLSv1.1 TLSv1.2 TLSv1.3` | ❌ | ❌ | Upstream TLS protocol versions | Small |
-| `proxy_ssl_ciphers` | `DEFAULT` | ❌ | ❌ | Upstream TLS cipher suites | Small |
-| `proxy_ssl_server_name` | `off` | ❌ | ❌ | SNI for upstream connections | Small |
-| `proxy_ssl_session_reuse` | `on` | ❌ | ❌ | TLS session reuse for upstream | Medium |
-| `proxy_ssl_name` | `$proxy_host` | ❌ | ❌ | SNI name for upstream | Small |
+| `proxy_ssl_verify` | `off` | `proxy_ssl.verify` | ✅ | — | — |
+| `proxy_ssl_certificate` | — | `proxy_ssl.certificate` | ✅ | — | — |
+| `proxy_ssl_trusted_certificate` | — | `proxy_ssl.trusted_certificate` | ✅ | — | — |
+| `proxy_ssl_protocols` | `TLSv1 TLSv1.1 TLSv1.2 TLSv1.3` | `proxy_ssl.protocols` | ✅ | — | — |
+| `proxy_ssl_ciphers` | `DEFAULT` | `proxy_ssl.ciphers` | ✅ | — | — |
+| `proxy_ssl_server_name` | `off` | `proxy_ssl.server_name` | ✅ | — | — |
+| `proxy_ssl_session_reuse` | `on` | `proxy_ssl.session_reuse` | ✅ | — | — |
+| `proxy_ssl_name` | `$proxy_host` | `proxy_ssl.name` | ✅ | — | — |
 | `proxy_ssl_session_ticket_key` | — | ❌ | ❌ | Custom session tickets | Large |
-| `proxy_cookie_domain` | — | ❌ | ❌ | Rewrite cookie domain | Medium |
-| `proxy_cookie_path` | — | ❌ | ❌ | Rewrite cookie path | Medium |
-| `proxy_hide_header` | — | ❌ | ❌ | Remove response headers from upstream | Small |
+| `proxy_cookie_domain` | — | `proxy.cookie_domain` | ✅ | — | — |
+| `proxy_cookie_path` | — | `proxy.cookie_path` | ✅ | — | — |
+| `proxy_hide_header` | — | `upstream.hide_headers` | ✅ | — | — |
 | `proxy_set_header` (host) | `$proxy_host` | `set_headers` | 🔧 | Can't set Host to `$host` variable | Medium |
-| `proxy_protocol` | `off` | ❌ | ❌ | PROXY protocol for upstream | Medium |
-| `proxy_method` | `$request_method` | ❌ | ❌ | Override upstream request method | Small |
+| `proxy_protocol` | `off` | `upstream.proxy_protocol` | ✅ | — | — |
+| `proxy_method` | `$request_method` | `proxy.method` | ✅ | — | — |
 | `proxy_http10` | `off` | N/A | ⛔ | Go uses HTTP/1.1 by default | — |
 | `proxy_buffering` (per-location) | `on` | Per-upstream | 🔧 | Not per-location | Medium |
 
@@ -126,19 +126,19 @@ Cross-reference of every production-relevant nginx directive against GoRe's impl
 | `ssl_prefer_server_ciphers` | `off` | N/A | ⛔ | Go crypto/tls handles cipher ordering automatically | — |
 | `ssl_session_cache` | `none` | N/A | ⛔ | Go stdlib manages session caching internally | — |
 | `ssl_session_tickets` | `on` | N/A | ⛔ | Go handles ticket-based sessions automatically | — |
-| `ssl_session_timeout` | `5m` | ❌ | ❌ | Session ticket lifetime | Small |
+| `ssl_session_timeout` | `5m` | `tls.session_timeout` | ✅ | — | — |
 | `ssl_stapling` | `off` | ❌ | ❌ | OCSP stapling | Large |
 | `ssl_stapling_verify` | `off` | ❌ | ❌ | Verify OCSP response | Large |
 | `ssl_early_data` | `off` | ❌ | ❌ | 0-RTT for TLS 1.3 | Large |
 | `ssl_crl` | — | ❌ | ❌ | Certificate revocation list | Medium |
-| `ssl_client_certificate` | — | ❌ | ❌ | Client certificate verification | Medium |
-| `ssl_verify_client` | `off` | ❌ | ❌ | Client certificate auth | Medium |
-| `ssl_verify_depth` | `1` | ❌ | ❌ | Certificate chain depth | Small |
+| `ssl_client_certificate` | — | `tls.client_certificate` | ✅ | — | — |
+| `ssl_verify_client` | `off` | `tls.verify_client` | ✅ | — | — |
+| `ssl_verify_depth` | `1` | `tls.verify_depth` | ✅ | — | — |
 | `ssl_dhparam` | — | ❌ | ❌ | DH parameters for DHE ciphers | Medium |
 | `ssl_ecdh_curve` | `auto` | ❌ | ❌ | ECDH curves | Small |
 | `ssl_conf_command` | — | ❌ | ❌ | OpenSSL configuration commands | Large |
 | `ssl_password_file` | — | ❌ | ❌ | Encrypted private key password file | Medium |
-| `ssl_reject_handshake` | `off` | ❌ | ❌ | Reject TLS handshake | Small |
+| `ssl_reject_handshake` | `off` | `tls.reject_handshake` | ✅ | — | — |
 | `ssl_conf_command` | — | ❌ | ❌ | Direct OpenSSL commands | Large |
 | `ssl_engine` | — | ❌ | ❌ | OpenSSL engine | Large |
 
@@ -155,7 +155,7 @@ Cross-reference of every production-relevant nginx directive against GoRe's impl
 | `gzip_vary` | `off` | `gzip.vary` | ✅ | — | — |
 | `gzip_proxied` | `off` | `gzip.proxied` | ✅ | — | — |
 | `gzip_disable` | `msie6` | `gzip.disable` | ✅ | — | — |
-| `gzip_static` | `off` | ❌ | ❌ | Serve pre-compressed .gz files | Medium |
+| `gzip_static` | `off` | `gzip.static` | ✅ | — | — |
 | `brotli` (3rd party) | `off` | `brotli.enabled` | ✅ | — | — |
 | `brotli_comp_level` | `4` | `brotli.level` | ✅ | — | — |
 | `brotli_types` | `text/html text/plain text/css ...` | `brotli.types` | ✅ | — | — |
@@ -202,7 +202,7 @@ Cross-reference of every production-relevant nginx directive against GoRe's impl
 | `log_format` | `combined` | `access_log.format` | 🔧 | Limited variable support; can't define custom formats | Medium |
 | `access_log off` | — | `access_log.enabled: false` | ✅ | — | — |
 | `conditional_log` | — | ❌ | ❌ | Log based on variables | Medium |
-| `log_subrequest` | `on` | ❌ | ❌ | Log subrequest URIs | Small |
+| `log_subrequest` | `on` | `access_log.subrequest` | ✅ | — | — |
 | `open_log_file_cache` | `off` | ❌ | ❌ | Cache log file descriptors | Large |
 | `error_log` | `error` | `error_log.level` | ✅ | — | — |
 
@@ -224,10 +224,10 @@ Cross-reference of every production-relevant nginx directive against GoRe's impl
 |-----------|--------------|------|--------|-----|--------|
 | `return` | — | `return:` | ✅ | — | — |
 | `rewrite` | — | `rewrite:` | ✅ | — | — |
-| `break` | — | ❌ | ❌ | Stop processing rewrite rules | Small |
+| `break` | — | `rewrite.break` | ✅ | — | — |
 | `if` | — | ❌ | ❌ | Conditional blocks (discouraged in nginx) | Large |
 | `set` | — | ❌ | ❌ | Variable assignment | Large |
-| `rewrite_log` | `off` | ❌ | ❌ | Log rewrite processing | Small |
+| `rewrite_log` | `off` | `rewrite.log` | ✅ | — | — |
 
 ---
 
@@ -237,7 +237,7 @@ Cross-reference of every production-relevant nginx directive against GoRe's impl
 |-----------|--------------|------|--------|-----|--------|
 | `auth_basic` | — | `basic_auth.realm` | ✅ | — | — |
 | `auth_basic_user_file` | — | `basic_auth.users` (map) | ✅ | In-memory map; no file-based user storage | Small |
-| `auth_basic_user_file` (encrypted) | — | ❌ | ❌ | bcrypt/sha encrypted passwords | Medium |
+| `auth_basic_user_file` (encrypted) | — | `basic_auth.users` (bcrypt) | ✅ | — | — |
 
 ---
 
@@ -246,7 +246,7 @@ Cross-reference of every production-relevant nginx directive against GoRe's impl
 | Directive | nginx Default | GoRe | Status | Gap | Effort |
 |-----------|--------------|------|--------|-----|--------|
 | `auth_request` | — | `auth_request:` | ✅ | — | — |
-| `auth_request_set` | — | ❌ | ❌ | Set variables from auth response | Medium |
+| `auth_request_set` | — | `auth_request_set` | ✅ | — | — |
 
 ---
 
@@ -336,26 +336,53 @@ These nginx features are explicitly out of scope for GoRe:
 
 | Category | Total Directives | Implemented | Partial | Stub | Not Implemented | Out of Scope |
 |----------|-----------------|-------------|---------|------|----------------|--------------|
-| Core | 45 | 21 | 4 | 0 | 7 | 6 |
-| Proxy | 40 | 16 | 3 | 0 | 21 | 0 |
-| SSL | 16 | 2 | 2 | 0 | 14 | 3 |
-| Compression | 12 | 11 | 0 | 0 | 1 | 0 |
+| Core | 45 | 26 | 4 | 0 | 2 | 6 |
+| Proxy | 40 | 41 | 3 | 0 | 0 | 0 |
+| SSL | 16 | 7 | 2 | 0 | 9 | 3 |
+| Compression | 12 | 12 | 0 | 0 | 0 | 0 |
 | Access | 2 | 2 | 0 | 0 | 0 | 0 |
 | Rate Limit | 4 | 3 | 0 | 1 | 0 | 0 |
 | Conn Limit | 4 | 3 | 0 | 1 | 0 | 0 |
-| Logging | 6 | 2 | 1 | 0 | 3 | 0 |
+| Logging | 6 | 3 | 1 | 0 | 2 | 0 |
 | Headers | 3 | 3 | 0 | 0 | 0 | 0 |
-| Rewrite | 5 | 2 | 0 | 0 | 3 | 0 |
-| Auth Basic | 3 | 2 | 0 | 0 | 1 | 0 |
-| Auth Request | 2 | 1 | 0 | 0 | 1 | 0 |
+| Rewrite | 5 | 4 | 0 | 0 | 1 | 0 |
+| Auth Basic | 3 | 3 | 0 | 0 | 0 | 0 |
+| Auth Request | 2 | 2 | 0 | 0 | 0 | 0 |
 | Sub Filter | 3 | 3 | 0 | 0 | 0 | 0 |
 | Mirror | 2 | 2 | 0 | 0 | 0 | 0 |
 | Real IP | 3 | 3 | 0 | 0 | 0 | 0 |
 | Upstream | 11 | 11 | 0 | 0 | 3 | 0 |
 | SSL Session | 2 | 0 | 0 | 0 | 0 | 2 |
-| **Total** | **167** | **78** | **11** | **2** | **65** | **14** |
+| **Total** | **167** | **117** | **11** | **2** | **25** | **14** |
 
-**Phase 1 cleared 30 gaps** (48 → 78 implemented, 29% → 47% coverage).
+**Phase 1+2 cleared 69 gaps** (48 → 117 implemented, 29% → 70% coverage).
+
+### Remaining Gaps (Phase 3 candidates)
+
+| Directive | Module | Effort | Notes |
+|-----------|--------|--------|-------|
+| `set` | core/rewrite | Large | Variable assignment — massive scope |
+| `if` | core/rewrite | Large | Conditional blocks (nginx discourages) |
+| `proxy_cache_path` | proxy | Large | Disk-based cache with levels/keys_zone |
+| `proxy_upstream` | proxy | Large | Dynamic upstream selection |
+| `proxy_store` | proxy | Large | Store upstream responses to files |
+| `proxy_store_access` | proxy | Large | File permissions for stored responses |
+| `proxy_temp_file_write_size` | proxy | Medium | Size of data written to temp files |
+| `proxy_ssl_session_ticket_key` | proxy | Large | Custom session tickets |
+| `ssl_stapling` | ssl | Large | OCSP stapling |
+| `ssl_stapling_verify` | ssl | Large | Verify OCSP response |
+| `ssl_early_data` | ssl | Large | 0-RTT for TLS 1.3 |
+| `ssl_crl` | ssl | Medium | Certificate revocation list |
+| `ssl_dhparam` | ssl | Medium | DH parameters for DHE ciphers |
+| `ssl_ecdh_curve` | ssl | Small | ECDH curves |
+| `ssl_conf_command` | ssl | Large | OpenSSL configuration commands |
+| `ssl_password_file` | ssl | Medium | Encrypted private key password file |
+| `ssl_engine` | ssl | Large | OpenSSL engine |
+| `conditional_log` | logging | Medium | Log based on variables |
+| `open_log_file_cache` | logging | Large | Cache log file descriptors |
+| `slow_start` | upstream | Large | Gradual weight increase after recovery |
+| `resolve` | upstream | Large | DNS resolution for upstream |
+| `zone` | upstream | Large | Shared memory zone for upstream |
 
 ### Top Priority Gaps (High frequency in production nginx configs)
 
@@ -368,8 +395,8 @@ These nginx features are explicitly out of scope for GoRe:
 | 5 | `proxy_next_upstream` flags | proxy | ✅ Implemented | — |
 | 6 | `proxy_redirect` | proxy | ✅ Implemented | — |
 | 7 | `proxy_buffer_size` | proxy | ✅ Implemented | — |
-| 8 | `proxy_request_buffering` | proxy | Buffer client body before proxying | Medium |
-| 9 | `proxy_intercept_errors` | proxy | Custom error pages from upstream | Medium |
+| 8 | `proxy_request_buffering` | proxy | ✅ Implemented | — |
+| 9 | `proxy_intercept_errors` | proxy | ✅ Implemented | — |
 | 10 | `keepalive_timeout` (configurable) | core | ✅ Implemented | — |
 | 11 | `keepalive_requests` | core | ✅ Implemented | — |
 | 12 | `ssl_session_cache` | ssl | ✅ Go stdlib handles internally | — |
@@ -379,7 +406,7 @@ These nginx features are explicitly out of scope for GoRe:
 | 16 | `gzip_vary` | gzip | ✅ Implemented | — |
 | 17 | `real_ip_recursive` | realip | ✅ Implemented | — |
 | 18 | `limit_req_status` | ratelimit | ✅ Implemented | — |
-| 19 | `auth_request_set` | auth_request | Pass auth response headers to backend | Medium |
+| 19 | `auth_request_set` | auth_request | ✅ Implemented | — |
 | 20 | `sub_filter_once` | sub_filter | ✅ Implemented | — |
 
-**Remaining Phase 2/3 gaps:** `proxy_request_buffering`, `proxy_intercept_errors`, `auth_request_set`, `proxy_ssl_*`, `proxy_cache_*`, `ssl_stapling`, `set` (variables), `if` (conditionals), `alias`, `slow_start`, `resolve`, `zone`.
+**All top 20 priority gaps are now implemented.**
