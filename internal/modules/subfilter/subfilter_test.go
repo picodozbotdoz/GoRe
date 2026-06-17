@@ -9,7 +9,7 @@ import (
 func TestSubFilterReplaces(t *testing.T) {
 	handler := New(map[string]string{
 		"old": "new",
-	})(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	}, false, nil)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("old content old"))
 	}))
 
@@ -26,7 +26,7 @@ func TestSubFilterMultiplePatterns(t *testing.T) {
 	handler := New(map[string]string{
 		"foo": "bar",
 		"baz": "qux",
-	})(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	}, false, nil)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("foo baz foo"))
 	}))
 
@@ -41,7 +41,7 @@ func TestSubFilterMultiplePatterns(t *testing.T) {
 
 func TestSubFilterEmpty(t *testing.T) {
 	called := false
-	handler := New(map[string]string{})(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	handler := New(map[string]string{}, false, nil)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		called = true
 		w.Write([]byte("unchanged"))
 	}))
@@ -59,7 +59,7 @@ func TestSubFilterEmpty(t *testing.T) {
 }
 
 func TestSubFilterPreservesHeaders(t *testing.T) {
-	handler := New(map[string]string{"a": "b"})(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	handler := New(map[string]string{"a": "b"}, false, nil)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("X-Custom", "value")
 		w.WriteHeader(201)
 		w.Write([]byte("a"))
@@ -77,5 +77,122 @@ func TestSubFilterPreservesHeaders(t *testing.T) {
 	}
 	if rec.Body.String() != "b" {
 		t.Errorf("body = %q, want %q", rec.Body.String(), "b")
+	}
+}
+
+func TestSubFilterOnce(t *testing.T) {
+	handler := New(map[string]string{
+		"old": "new",
+	}, true, nil)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte("old content old"))
+	}))
+
+	req := httptest.NewRequest("GET", "/", nil)
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+
+	if rec.Body.String() != "new content old" {
+		t.Errorf("body = %q, want %q", rec.Body.String(), "new content old")
+	}
+}
+
+func TestSubFilterOnceDisabled(t *testing.T) {
+	handler := New(map[string]string{
+		"old": "new",
+	}, false, nil)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte("old content old"))
+	}))
+
+	req := httptest.NewRequest("GET", "/", nil)
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+
+	if rec.Body.String() != "new content new" {
+		t.Errorf("body = %q, want %q", rec.Body.String(), "new content new")
+	}
+}
+
+func TestSubFilterTypesMatch(t *testing.T) {
+	handler := New(map[string]string{
+		"old": "new",
+	}, false, []string{"text/html", "text/plain"})(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/html")
+		w.Write([]byte("old content"))
+	}))
+
+	req := httptest.NewRequest("GET", "/", nil)
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+
+	if rec.Body.String() != "new content" {
+		t.Errorf("body = %q, want %q", rec.Body.String(), "new content")
+	}
+}
+
+func TestSubFilterTypesNoMatch(t *testing.T) {
+	handler := New(map[string]string{
+		"old": "new",
+	}, false, []string{"text/html"})(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.Write([]byte("old content"))
+	}))
+
+	req := httptest.NewRequest("GET", "/", nil)
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+
+	if rec.Body.String() != "old content" {
+		t.Errorf("body = %q, want %q", rec.Body.String(), "old content")
+	}
+}
+
+func TestSubFilterTypesEmpty(t *testing.T) {
+	handler := New(map[string]string{
+		"old": "new",
+	}, false, []string{})(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.Write([]byte("old content"))
+	}))
+
+	req := httptest.NewRequest("GET", "/", nil)
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+
+	if rec.Body.String() != "new content" {
+		t.Errorf("body = %q, want %q", rec.Body.String(), "new content")
+	}
+}
+
+func TestSubFilterTypesNil(t *testing.T) {
+	handler := New(map[string]string{
+		"old": "new",
+	}, false, nil)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.Write([]byte("old content"))
+	}))
+
+	req := httptest.NewRequest("GET", "/", nil)
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+
+	if rec.Body.String() != "new content" {
+		t.Errorf("body = %q, want %q", rec.Body.String(), "new content")
+	}
+}
+
+func TestSubFilterTypesSubStringMatch(t *testing.T) {
+	handler := New(map[string]string{
+		"old": "new",
+	}, false, []string{"text/html"})(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		w.Write([]byte("old content"))
+	}))
+
+	req := httptest.NewRequest("GET", "/", nil)
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+
+	if rec.Body.String() != "new content" {
+		t.Errorf("body = %q, want %q", rec.Body.String(), "new content")
 	}
 }

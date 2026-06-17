@@ -4,9 +4,10 @@ import (
 	"bytes"
 	"fmt"
 	"net/http"
+	"strings"
 )
 
-func New(replacements map[string]string) func(http.Handler) http.Handler {
+func New(replacements map[string]string, once bool, types []string) func(http.Handler) http.Handler {
 	if len(replacements) == 0 {
 		return func(next http.Handler) http.Handler { return next }
 	}
@@ -15,9 +16,32 @@ func New(replacements map[string]string) func(http.Handler) http.Handler {
 			cw := &captureWriter{ResponseWriter: w, buf: &bytes.Buffer{}}
 			next.ServeHTTP(cw, r)
 
+			if len(types) > 0 {
+				ct := cw.Header().Get("Content-Type")
+				if ct != "" {
+					matched := false
+					for _, t := range types {
+						if strings.Contains(ct, t) {
+							matched = true
+							break
+						}
+					}
+					if !matched {
+						w.Header().Set("Content-Length", fmt.Sprintf("%d", cw.buf.Len()))
+						w.WriteHeader(cw.status)
+						w.Write(cw.buf.Bytes())
+						return
+					}
+				}
+			}
+
 			body := cw.buf.Bytes()
 			for old, new := range replacements {
-				body = bytes.ReplaceAll(body, []byte(old), []byte(new))
+				if once {
+					body = bytes.Replace(body, []byte(old), []byte(new), 1)
+				} else {
+					body = bytes.ReplaceAll(body, []byte(old), []byte(new))
+				}
 			}
 
 			w.Header().Set("Content-Length", fmt.Sprintf("%d", len(body)))

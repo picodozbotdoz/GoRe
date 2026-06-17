@@ -1,8 +1,10 @@
 package mirror
 
 import (
+	"io"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -75,5 +77,63 @@ func TestMirrorSetsHeader(t *testing.T) {
 	time.Sleep(100 * time.Millisecond)
 	if !gotHeader {
 		t.Error("X-Mirror-Request header not set")
+	}
+}
+
+func TestMirrorForwardsBody(t *testing.T) {
+	var receivedBody string
+	var mu sync.Mutex
+
+	backend := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		body, _ := io.ReadAll(r.Body)
+		mu.Lock()
+		receivedBody = string(body)
+		mu.Unlock()
+		w.WriteHeader(200)
+	}))
+	defer backend.Close()
+
+	handler := New(backend.URL)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte("ok"))
+	}))
+
+	req := httptest.NewRequest("POST", "/test", strings.NewReader("hello world"))
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+
+	time.Sleep(100 * time.Millisecond)
+	mu.Lock()
+	defer mu.Unlock()
+	if receivedBody != "hello world" {
+		t.Errorf("mirror body = %q, want %q", receivedBody, "hello world")
+	}
+}
+
+func TestMirrorForwardsBodyNil(t *testing.T) {
+	var receivedBody string
+	var mu sync.Mutex
+
+	backend := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		body, _ := io.ReadAll(r.Body)
+		mu.Lock()
+		receivedBody = string(body)
+		mu.Unlock()
+		w.WriteHeader(200)
+	}))
+	defer backend.Close()
+
+	handler := New(backend.URL)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte("ok"))
+	}))
+
+	req := httptest.NewRequest("GET", "/test", nil)
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+
+	time.Sleep(100 * time.Millisecond)
+	mu.Lock()
+	defer mu.Unlock()
+	if receivedBody != "" {
+		t.Errorf("mirror body = %q, want empty", receivedBody)
 	}
 }

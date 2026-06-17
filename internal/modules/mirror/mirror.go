@@ -19,7 +19,11 @@ func New(mirrorURL string) func(http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			next.ServeHTTP(w, r)
 
-			mirrorReq, err := http.NewRequestWithContext(r.Context(), r.Method, mirrorURL+r.URL.Path, nil)
+			var body io.Reader
+			if r.Body != nil {
+				body = r.Body
+			}
+			mirrorReq, err := http.NewRequestWithContext(r.Context(), r.Method, mirrorURL+r.URL.Path, body)
 			if err != nil {
 				return
 			}
