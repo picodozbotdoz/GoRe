@@ -77,6 +77,9 @@ func NewUpstream(name string, servers []*Server, strategy string, timeouts *Time
 	if !buffered {
 		u.Proxy.FlushInterval = -1
 	}
+	if bufferSize > 0 {
+		u.Proxy.BufferPool = newFixedBufferPool(bufferSize)
+	}
 	if redirect != "" {
 		u.Proxy.ModifyResponse = u.modifyResponse
 	}
@@ -130,6 +133,22 @@ func rewriteRedirect(loc, pattern string) string {
 	re := strings.TrimSpace(parts[0])
 	repl := strings.TrimSpace(parts[1])
 	return strings.Replace(loc, re, repl, 1)
+}
+
+type fixedBufferPool struct {
+	size int
+}
+
+func newFixedBufferPool(size int) *fixedBufferPool {
+	return &fixedBufferPool{size: size}
+}
+
+func (p *fixedBufferPool) Get() []byte {
+	return make([]byte, p.size)
+}
+
+func (p *fixedBufferPool) Put(b []byte) {
+	// no-op; let GC handle it
 }
 
 func (u *Upstream) transport(tc *TimeoutConfig) *http.Transport {
