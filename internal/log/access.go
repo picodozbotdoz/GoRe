@@ -114,15 +114,16 @@ func (rw *responseWriter) Unwrap() http.ResponseWriter {
 	return rw.ResponseWriter
 }
 
-func AccessMiddleware(enabled bool, output, format string) func(http.Handler) http.Handler {
+func AccessMiddleware(enabled bool, output, format string, subrequest bool) func(http.Handler) http.Handler {
 	if !enabled {
 		return func(next http.Handler) http.Handler { return next }
 	}
 
 	logger := newAccessLogger(&AccessLogConfig{
-		Enabled: enabled,
-		Output:  output,
-		Format:  format,
+		Enabled:    enabled,
+		Output:     output,
+		Format:     format,
+		Subrequest: subrequest,
 	})
 	if logger == nil {
 		return func(next http.Handler) http.Handler { return next }
@@ -135,11 +136,17 @@ func AccessMiddleware(enabled bool, output, format string) func(http.Handler) ht
 				reqStartFn()
 			}
 
+			isSubrequest := r.Header.Get("X-Subrequest") != "" || r.Header.Get("X-Sub-Request") != ""
+
 			rw := &responseWriter{ResponseWriter: w, status: 200}
 			next.ServeHTTP(rw, r)
 
 			if reqDoneFn != nil {
 				reqDoneFn()
+			}
+
+			if isSubrequest && !subrequest {
+				return
 			}
 
 			duration := time.Since(start).Seconds()

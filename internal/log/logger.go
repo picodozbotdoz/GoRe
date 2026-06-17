@@ -70,9 +70,10 @@ type Config struct {
 }
 
 type AccessLogConfig struct {
-	Enabled bool   `yaml:"enabled"`
-	Output  string `yaml:"output,omitempty"`
-	Format  string `yaml:"format,omitempty"`
+	Enabled    bool   `yaml:"enabled"`
+	Output     string `yaml:"output,omitempty"`
+	Format     string `yaml:"format,omitempty"`
+	Subrequest bool   `yaml:"subrequest,omitempty"`
 }
 
 func Init(cfg *Config) {

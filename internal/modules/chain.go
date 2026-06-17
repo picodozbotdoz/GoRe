@@ -116,6 +116,7 @@ func BuildChain(cfg *config.ModulesConfig, next http.Handler) http.Handler {
 		cfg.AccessLog != nil && cfg.AccessLog.Enabled,
 		cfg.AccessLog.GetOutput(),
 		cfg.AccessLog.GetFormat(),
+		cfg.AccessLog != nil && cfg.AccessLog.Subrequest,
 	)(handler)
 
 	return handler

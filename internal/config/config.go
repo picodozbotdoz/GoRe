@@ -125,6 +125,8 @@ type Rewrite struct {
 	Pattern     string `yaml:"pattern"`
 	Replacement string `yaml:"replacement"`
 	Code        int    `yaml:"code,omitempty"`
+	Log         bool   `yaml:"log,omitempty"`
+	Break       bool   `yaml:"break,omitempty"`
 }
 
 type Proxy struct {
@@ -142,6 +144,7 @@ type Proxy struct {
 	Redirect           string            `yaml:"redirect,omitempty"`
 	PassRequestHeaders *bool             `yaml:"pass_request_headers,omitempty"`
 	PassRequestBody    *bool             `yaml:"pass_request_body,omitempty"`
+	MaxTempFileSize    string            `yaml:"max_temp_file_size,omitempty"`
 }
 
 type Upstream struct {
@@ -398,9 +401,10 @@ type HeaderEntry struct {
 }
 
 type AccessLogConfig struct {
-	Enabled bool   `yaml:"enabled"`
-	Output  string `yaml:"output,omitempty"`
-	Format  string `yaml:"format,omitempty"`
+	Enabled    bool   `yaml:"enabled"`
+	Output     string `yaml:"output,omitempty"`
+	Format     string `yaml:"format,omitempty"`
+	Subrequest bool   `yaml:"subrequest,omitempty"`
 }
 
 func (c *AccessLogConfig) GetOutput() string {

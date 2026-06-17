@@ -125,7 +125,7 @@ func TestResponseWriterStatus(t *testing.T) {
 }
 
 func TestAccessMiddlewareDisabled(t *testing.T) {
-	middleware := AccessMiddleware(false, "", "")
+	middleware := AccessMiddleware(false, "", "", false)
 	inner := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(200)
 		w.Write([]byte("ok"))
@@ -144,7 +144,7 @@ func TestAccessMiddlewareDisabled(t *testing.T) {
 func TestAccessMiddlewareCapturesRequest(t *testing.T) {
 	var buf bytes.Buffer
 
-	middleware := AccessMiddleware(true, "", "")
+	middleware := AccessMiddleware(true, "", "", false)
 	inner := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(201)
 		w.Write([]byte("created"))
