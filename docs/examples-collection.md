@@ -25,10 +25,10 @@ Tracked, verified, runnable configuration examples. Each example is in `examples
 
 | # | Feature | Dir | Config | Before | After | Test | Verified | Logging | Notes |
 |---|---------|-----|--------|--------|-------|------|----------|---------|-------|
-| 4 | HTTP/2 h2c | `examples/http2-cleartext/` | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | Cleartext HTTP/2 upgrade |
-| 5 | HTTP/3 QUIC | `examples/http3-quic/` | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | QUIC with Alt-Svc |
-| 6 | Gzip compression | `examples/gzip/` | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | Compress text/JSON responses |
-| 7 | Brotli compression | `examples/brotli/` | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | Better ratio than gzip |
+| 4 | HTTP/2 h2c | `examples/http2-cleartext/` | ✅ | ✅ | ✅ | ✅ | ✅ | ⬜ | Cleartext HTTP/2 upgrade |
+| 5 | HTTP/3 QUIC | `examples/http3-quic/` | ✅ | ✅ | ✅ | ✅ | ✅ | ⬜ | QUIC with Alt-Svc |
+| 6 | Gzip compression | `examples/gzip/` | ✅ | ✅ | ✅ | ✅ | ✅ | 🔨 | Compress text/JSON responses |
+| 7 | Brotli compression | `examples/brotli/` | ✅ | ✅ | ✅ | ✅ | ✅ | ⬜ | Better ratio than gzip |
 
 ## Priority 3 — Security Features
 
@@ -92,10 +92,10 @@ Tracked, verified, runnable configuration examples. Each example is in `examples
 | Priority | Total | Done | % |
 |----------|-------|------|---|
 | P1 Core | 3 | 3 | 100% |
-| P2 Protocol | 4 | 0 | 0% |
+| P2 Protocol | 4 | 4 | 100% |
 | P3 Security | 6 | 0 | 0% |
 | P4 Proxy | 9 | 0 | 0% |
 | P5 Advanced | 11 | 0 | 0% |
 | P6 Observability | 3 | 0 | 0% |
 | P7 Full Stack | 3 | 0 | 0% |
-| **Total** | **39** | **3** | **8%** |
+| **Total** | **39** | **7** | **18%** |

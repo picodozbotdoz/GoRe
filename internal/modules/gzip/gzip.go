@@ -43,8 +43,12 @@ func (h *Handler) ServeHTTP(next http.Handler) http.Handler {
 		rw := &captureResponseWriter{ResponseWriter: w, buf: &buf, gz: gz}
 		next.ServeHTTP(rw, r)
 
-		contentType := w.Header().Get("Content-Type")
+		contentType := rw.Header().Get("Content-Type")
 		if !h.shouldCompress(contentType) {
+			if rw.status == 0 {
+				rw.status = 200
+			}
+			w.WriteHeader(rw.status)
 			return
 		}
 
@@ -52,6 +56,10 @@ func (h *Handler) ServeHTTP(next http.Handler) http.Handler {
 
 		w.Header().Set("Content-Encoding", "gzip")
 		w.Header().Del("Content-Length")
+		if rw.status == 0 {
+			rw.status = 200
+		}
+		w.WriteHeader(rw.status)
 		w.Write(buf.Bytes())
 	})
 }
@@ -70,8 +78,20 @@ func (h *Handler) shouldCompress(contentType string) bool {
 
 type captureResponseWriter struct {
 	http.ResponseWriter
-	buf *bytes.Buffer
-	gz  *gzip.Writer
+	buf      *bytes.Buffer
+	gz       *gzip.Writer
+	status   int
+	written  bool
+	compress bool
+}
+
+func (w *captureResponseWriter) Header() http.Header {
+	return w.ResponseWriter.Header()
+}
+
+func (w *captureResponseWriter) WriteHeader(code int) {
+	w.status = code
+	w.written = true
 }
 
 func (w *captureResponseWriter) Write(b []byte) (int, error) {
@@ -80,4 +100,8 @@ func (w *captureResponseWriter) Write(b []byte) (int, error) {
 
 func (w *captureResponseWriter) Flush() {
 	w.gz.Flush()
+}
+
+func (w *captureResponseWriter) Unwrap() http.ResponseWriter {
+	return w.ResponseWriter
 }
