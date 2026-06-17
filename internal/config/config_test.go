@@ -48,7 +48,8 @@ modules:
     burst: 200
   headers:
     add:
-      X-Frame-Options: DENY
+      - name: X-Frame-Options
+        value: DENY
     remove:
       - Server
 `
