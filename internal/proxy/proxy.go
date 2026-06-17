@@ -2,12 +2,14 @@ package proxy
 
 import (
 	"crypto/tls"
+	"crypto/x509"
 	"fmt"
 	"io"
 	"net"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
+	"os"
 	"strings"
 	"sync"
 	"time"
@@ -15,19 +17,41 @@ import (
 	"github.com/user/gore/internal/proxy/cache"
 )
 
+// CacheConfig holds per-upstream cache directives from proxy_cache_* config fields.
+type CacheConfig struct {
+	Valid    map[string]time.Duration
+	UseStale bool
+	Lock     bool
+	Key      string
+	NoCache  string
+	Bypass   string
+}
+
 type Upstream struct {
-	Name               string
-	Balancer           Balancer
-	Proxy              *httputil.ReverseProxy
-	SetHeaders         map[string]string
-	MaxRetries         int
-	Cache              *cache.Cache
-	Redirect           string
-	NextUpstream       string
-	NextUpstreamTries  int
+	Name                string
+	Balancer            Balancer
+	Proxy               *httputil.ReverseProxy
+	SetHeaders          map[string]string
+	MaxRetries          int
+	Cache               *cache.Cache
+	CacheConfig         *CacheConfig
+	Redirect            string
+	NextUpstream        string
+	NextUpstreamTries   int
 	NextUpstreamTimeout int
-	PassRequestHeaders *bool
-	PassRequestBody    *bool
+	PassRequestHeaders  *bool
+	PassRequestBody     *bool
+	ProxySSL            *ProxySSLConfig
+	RequestBuffering    *bool
+	InterceptErrors     bool
+	ErrorPages          map[int]string
+	CookieDomain        string
+	CookiePath          string
+	Method              string
+	HideHeaders         []string
+	SocketKeepalive     *bool
+	BufferSize          int
+	cacheLocks          sync.Map
 }
 
 type TimeoutConfig struct {
@@ -40,7 +64,19 @@ type TimeoutConfig struct {
 	KeepaliveRequests int // max requests per keepalive connection
 }
 
-func NewUpstream(name string, servers []*Server, strategy string, timeouts *TimeoutConfig, setHeaders map[string]string, buffered bool, maxRetries int, bufferSize int, redirect string, nextUpstream string, nextUpstreamTries int, nextUpstreamTimeout int, passRequestHeaders *bool, passRequestBody *bool) *Upstream {
+type ProxySSLConfig struct {
+	Verify             bool
+	Certificate        string
+	CertificateKey     string
+	TrustedCertificate string
+	Protocols          string
+	Ciphers            string
+	ServerName         string
+	SessionReuse       *bool
+	Name               string
+}
+
+func NewUpstream(name string, servers []*Server, strategy string, timeouts *TimeoutConfig, setHeaders map[string]string, buffered bool, maxRetries int, bufferSize int, redirect string, nextUpstream string, nextUpstreamTries int, nextUpstreamTimeout int, passRequestHeaders *bool, passRequestBody *bool, requestBuffering *bool, interceptErrors bool, errorPages map[int]string, cookieDomain string, cookiePath string, method string, hideHeaders []string, socketKeepalive *bool, proxySSL *ProxySSLConfig, cacheConfig *CacheConfig) *Upstream {
 	var balancer Balancer
 	switch strategy {
 	case "least-conn":
@@ -68,6 +104,17 @@ func NewUpstream(name string, servers []*Server, strategy string, timeouts *Time
 		NextUpstreamTimeout: nextUpstreamTimeout,
 		PassRequestHeaders: passRequestHeaders,
 		PassRequestBody:    passRequestBody,
+		RequestBuffering:   requestBuffering,
+		InterceptErrors:    interceptErrors,
+		ErrorPages:         errorPages,
+		CookieDomain:       cookieDomain,
+		CookiePath:         cookiePath,
+		Method:             method,
+		HideHeaders:        hideHeaders,
+		SocketKeepalive:    socketKeepalive,
+		BufferSize:         bufferSize,
+		ProxySSL:           proxySSL,
+		CacheConfig:        cacheConfig,
 	}
 	u.Proxy = &httputil.ReverseProxy{
 		Director:     u.director,
@@ -80,8 +127,10 @@ func NewUpstream(name string, servers []*Server, strategy string, timeouts *Time
 	if bufferSize > 0 {
 		u.Proxy.BufferPool = newFixedBufferPool(bufferSize)
 	}
-	if redirect != "" {
-		u.Proxy.ModifyResponse = u.modifyResponse
+	if interceptErrors || redirect != "" || len(hideHeaders) > 0 || cookieDomain != "" || cookiePath != "" {
+		if u.Proxy.ModifyResponse == nil {
+			u.Proxy.ModifyResponse = u.modifyResponse
+		}
 	}
 	return u
 }
@@ -100,10 +149,22 @@ func (u *Upstream) director(req *http.Request) {
 	req.URL.Scheme = target.Scheme
 	req.URL.Host = target.Host
 
+	if u.Method != "" {
+		req.Method = u.Method
+	}
+
 	if u.PassRequestBody != nil && !*u.PassRequestBody {
 		req.Body = nil
 		req.ContentLength = 0
 		req.Header.Del("Content-Length")
+	}
+
+	if u.RequestBuffering != nil && *u.RequestBuffering && req.Body != nil {
+		body, err := io.ReadAll(req.Body)
+		if err == nil {
+			req.Body = io.NopCloser(strings.NewReader(string(body)))
+			req.ContentLength = int64(len(body))
+		}
 	}
 
 	if u.PassRequestHeaders == nil || *u.PassRequestHeaders {
@@ -119,6 +180,26 @@ func (u *Upstream) modifyResponse(resp *http.Response) error {
 			resp.Header.Set("Location", rewriteRedirect(loc, u.Redirect))
 		}
 	}
+
+	if u.InterceptErrors {
+		if u.ErrorPages != nil {
+			if replacementPath, ok := u.ErrorPages[resp.StatusCode]; ok {
+				resp.Header.Set("X-Error-Page", replacementPath)
+				resp.Header.Set("X-Error-Status", fmt.Sprintf("%d", resp.StatusCode))
+			}
+		}
+	}
+
+	if len(u.HideHeaders) > 0 {
+		for _, h := range u.HideHeaders {
+			resp.Header.Del(h)
+		}
+	}
+
+	if u.CookieDomain != "" || u.CookiePath != "" {
+		rewriteCookies(resp, u.CookieDomain, u.CookiePath)
+	}
+
 	return nil
 }
 
@@ -133,6 +214,20 @@ func rewriteRedirect(loc, pattern string) string {
 	re := strings.TrimSpace(parts[0])
 	repl := strings.TrimSpace(parts[1])
 	return strings.Replace(loc, re, repl, 1)
+}
+
+func rewriteCookies(resp *http.Response, domain, path string) {
+	cookies := resp.Cookies()
+	resp.Header.Del("Set-Cookie")
+	for _, c := range cookies {
+		if domain != "" {
+			c.Domain = domain
+		}
+		if path != "" {
+			c.Path = path
+		}
+		resp.Header.Add("Set-Cookie", c.String())
+	}
 }
 
 type fixedBufferPool struct {
@@ -160,19 +255,53 @@ func (u *Upstream) transport(tc *TimeoutConfig) *http.Transport {
 	if tc.KeepaliveTimeout > 0 {
 		idleTimeout = time.Duration(tc.KeepaliveTimeout) * time.Second
 	}
+
+	keepAliveDuration := 30 * time.Second
+	if u.SocketKeepalive != nil && !*u.SocketKeepalive {
+		keepAliveDuration = 0
+	}
+
+	tlsCfg := &tls.Config{
+		InsecureSkipVerify: false,
+	}
+
+	if u.ProxySSL != nil {
+		if u.ProxySSL.Verify {
+			caCert, err := os.ReadFile(u.ProxySSL.TrustedCertificate)
+			if err == nil {
+				caPool := x509.NewCertPool()
+				caPool.AppendCertsFromPEM(caCert)
+				tlsCfg.RootCAs = caPool
+			}
+		}
+		if u.ProxySSL.Certificate != "" {
+			cert, err := tls.LoadX509KeyPair(u.ProxySSL.Certificate, u.ProxySSL.CertificateKey)
+			if err == nil {
+				tlsCfg.Certificates = []tls.Certificate{cert}
+			}
+		}
+		if u.ProxySSL.ServerName != "" {
+			tlsCfg.ServerName = u.ProxySSL.ServerName
+		}
+		if u.ProxySSL.Name != "" {
+			tlsCfg.ServerName = u.ProxySSL.Name
+		}
+		if u.ProxySSL.SessionReuse != nil && !*u.ProxySSL.SessionReuse {
+			tlsCfg.SessionTicketsDisabled = true
+		}
+	}
+
 	return &http.Transport{
 		MaxIdleConns:        keepalivePerHost * 10,
 		MaxIdleConnsPerHost: keepalivePerHost,
 		IdleConnTimeout:     idleTimeout,
 		DialContext: (&net.Dialer{
 			Timeout:   time.Duration(tc.Connect) * time.Second,
-			KeepAlive: 30 * time.Second,
+			KeepAlive: keepAliveDuration,
 		}).DialContext,
 		ResponseHeaderTimeout: time.Duration(tc.Read) * time.Second,
-		TLSClientConfig: &tls.Config{
-			InsecureSkipVerify: false,
-		},
-		ForceAttemptHTTP2: true,
+		TLSClientConfig:       tlsCfg,
+		ForceAttemptHTTP2:     true,
 	}
 }
 
@@ -187,8 +316,45 @@ func (u *Upstream) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	cc := u.CacheConfig
 	if u.Cache != nil && r.Method == http.MethodGet {
 		key := u.Cache.Key(r)
+		if cc != nil && cc.Key != "" {
+			key = cc.Key + " " + key
+		}
+
+		if cc != nil && cc.NoCache != "" {
+			if r.Header.Get(cc.NoCache) != "" {
+				u.proxyAndReturn(w, r)
+				return
+			}
+		}
+		if cc != nil && cc.Bypass != "" {
+			if r.Header.Get(cc.Bypass) != "" {
+				u.proxyAndReturn(w, r)
+				return
+			}
+		}
+
+		if cc != nil && cc.Lock {
+			if _, loaded := u.cacheLocks.LoadOrStore(key, true); loaded {
+				if entry, ok := u.Cache.Get(key); ok {
+					for k, vv := range entry.Header {
+						for _, v := range vv {
+							w.Header().Add(k, v)
+						}
+					}
+					w.Header().Set("X-Cache", "HIT")
+					w.WriteHeader(entry.Status)
+					w.Write(entry.Body)
+					return
+				}
+				http.Error(w, "Bad Gateway", http.StatusBadGateway)
+				return
+			}
+			defer u.cacheLocks.Delete(key)
+		}
+
 		if entry, ok := u.Cache.Get(key); ok {
 			for k, vv := range entry.Header {
 				for _, v := range vv {
@@ -200,8 +366,45 @@ func (u *Upstream) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			w.Write(entry.Body)
 			return
 		}
+
+		ccw := &cacheCaptureWriter{ResponseWriter: w}
+		rec := &retryResponseWriter{ResponseWriter: ccw, statusCode: 200}
+		u.Proxy.ServeHTTP(rec, r)
+
+		if rec.statusCode >= 200 && rec.statusCode < 400 {
+			entry := &cache.Entry{
+				Status: rec.statusCode,
+				Header: ccw.header,
+				Body:   ccw.body,
+			}
+			if cc != nil && cc.Valid != nil {
+				statusKey := fmt.Sprintf("%d", rec.statusCode)
+				if ttl, ok := cc.Valid[statusKey]; ok {
+					entry.TTL = ttl
+				}
+			}
+			u.Cache.Set(key, entry)
+		} else if rec.statusCode >= 500 && cc != nil && cc.UseStale {
+			if entry, ok := u.Cache.GetStale(key); ok {
+				for k, vv := range entry.Header {
+					for _, v := range vv {
+						w.Header().Add(k, v)
+					}
+				}
+				w.Header().Set("X-Cache", "STALE")
+				w.WriteHeader(entry.Status)
+				w.Write(entry.Body)
+				return
+			}
+		}
+		w.Header().Set("X-Cache", "MISS")
+		return
 	}
 
+	u.proxyAndReturn(w, r)
+}
+
+func (u *Upstream) proxyAndReturn(w http.ResponseWriter, r *http.Request) {
 	maxAttempts := u.MaxRetries + 1
 	if u.NextUpstreamTries > 0 {
 		maxAttempts = u.NextUpstreamTries
@@ -220,24 +423,8 @@ func (u *Upstream) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 
-		var rec *retryResponseWriter
-		if u.Cache != nil && r.Method == http.MethodGet {
-			ccw := &cacheCaptureWriter{ResponseWriter: w}
-			rec = &retryResponseWriter{ResponseWriter: ccw, statusCode: 200}
-			u.Proxy.ServeHTTP(rec, r)
-			if rec.statusCode == 200 {
-				entry := &cache.Entry{
-					Status: rec.statusCode,
-					Header: ccw.header,
-					Body:   ccw.body,
-				}
-				u.Cache.Set(u.Cache.Key(r), entry)
-				w.Header().Set("X-Cache", "MISS")
-			}
-		} else {
-			rec = &retryResponseWriter{ResponseWriter: w, statusCode: 200}
-			u.Proxy.ServeHTTP(rec, r)
-		}
+		rec := &retryResponseWriter{ResponseWriter: w, statusCode: 200}
+		u.Proxy.ServeHTTP(rec, r)
 
 		if attempt < maxAttempts-1 && shouldRetry(rec.statusCode, lastErr, flags) {
 			lastErr = fmt.Errorf("upstream returned %d", rec.statusCode)

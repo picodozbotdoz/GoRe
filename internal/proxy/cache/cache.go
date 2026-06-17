@@ -11,6 +11,7 @@ type Entry struct {
 	Header    http.Header
 	Body      []byte
 	CreatedAt time.Time
+	TTL       time.Duration
 }
 
 type Cache struct {
@@ -50,7 +51,11 @@ func (c *Cache) Get(key string) (*Entry, bool) {
 		c.misses++
 		return nil, false
 	}
-	if time.Since(entry.CreatedAt) > c.ttl {
+	ttl := c.ttl
+	if entry.TTL > 0 {
+		ttl = entry.TTL
+	}
+	if time.Since(entry.CreatedAt) > ttl {
 		c.misses++
 		return nil, false
 	}
@@ -72,6 +77,16 @@ func (c *Cache) Purge() {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	c.entries = make(map[string]*Entry)
+}
+
+func (c *Cache) GetStale(key string) (*Entry, bool) {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	entry, ok := c.entries[key]
+	if !ok {
+		return nil, false
+	}
+	return entry, true
 }
 
 func (c *Cache) Stats() (hits, misses int64) {

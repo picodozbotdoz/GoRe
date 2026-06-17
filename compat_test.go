@@ -194,7 +194,7 @@ func TestProxyModule(t *testing.T) {
 
 		upstream := proxy.NewUpstream("test", []*proxy.Server{
 			{Addr: backend.Listener.Addr().String()},
-		}, "round-robin", nil, nil, true, 0, 0, "", "", 0, 0, nil, nil, nil, false, nil, "", "", "", nil, nil)
+		}, "round-robin", nil, nil, true, 0, 0, "", "", 0, 0, nil, nil, nil, false, nil, "", "", "", nil, nil, nil, nil)
 
 		req := httptest.NewRequest("GET", "/test", nil)
 		w := httptest.NewRecorder()
@@ -225,7 +225,7 @@ func TestProxyModule(t *testing.T) {
 		upstream := proxy.NewUpstream("test", []*proxy.Server{
 			{Addr: backend1.Listener.Addr().String()},
 			{Addr: backend2.Listener.Addr().String()},
-		}, "round-robin", nil, nil, true, 0, 0, "", "", 0, 0, nil, nil, nil, false, nil, "", "", "", nil, nil)
+		}, "round-robin", nil, nil, true, 0, 0, "", "", 0, 0, nil, nil, nil, false, nil, "", "", "", nil, nil, nil, nil)
 
 		results := make(map[string]int)
 		for i := 0; i < 100; i++ {
@@ -420,7 +420,7 @@ func TestProxyKeepalive(t *testing.T) {
 
 	upstream := proxy.NewUpstream("test", []*proxy.Server{
 		{Addr: backend.Listener.Addr().String()},
-	}, "round-robin", nil, nil, true, 0, 0, "", "", 0, 0, nil, nil, nil, false, nil, "", "", "", nil, nil)
+	}, "round-robin", nil, nil, true, 0, 0, "", "", 0, 0, nil, nil, nil, false, nil, "", "", "", nil, nil, nil, nil)
 
 	// Make multiple requests
 	for i := 0; i < 10; i++ {
@@ -445,7 +445,7 @@ func TestProxyTimeout(t *testing.T) {
 
 	upstream := proxy.NewUpstream("test", []*proxy.Server{
 		{Addr: backend.Listener.Addr().String()},
-	}, "round-robin", nil, nil, true, 0, 0, "", "", 0, 0, nil, nil, nil, false, nil, "", "", "", nil, nil)
+	}, "round-robin", nil, nil, true, 0, 0, "", "", 0, 0, nil, nil, nil, false, nil, "", "", "", nil, nil, nil, nil)
 
 	req := httptest.NewRequest("GET", "/", nil)
 	w := httptest.NewRecorder()
@@ -489,7 +489,7 @@ func TestProxyProtocol(t *testing.T) {
 
 	upstream := proxy.NewUpstream("test", []*proxy.Server{
 		{Addr: backend.Listener.Addr().String()},
-	}, "round-robin", nil, nil, true, 0, 0, "", "", 0, 0, nil, nil, nil, false, nil, "", "", "", nil, nil)
+	}, "round-robin", nil, nil, true, 0, 0, "", "", 0, 0, nil, nil, nil, false, nil, "", "", "", nil, nil, nil, nil)
 
 	req := httptest.NewRequest("GET", "/", nil)
 	req.Header.Set("X-Forwarded-For", "10.0.0.1")
@@ -510,7 +510,7 @@ func TestUpstreamHash(t *testing.T) {
 
 	upstream := proxy.NewUpstream("test", []*proxy.Server{
 		{Addr: backend.Listener.Addr().String()},
-	}, "round-robin", nil, nil, true, 0, 0, "", "", 0, 0, nil, nil, nil, false, nil, "", "", "", nil, nil)
+	}, "round-robin", nil, nil, true, 0, 0, "", "", 0, 0, nil, nil, nil, false, nil, "", "", "", nil, nil, nil, nil)
 
 	// Same client should get same backend (with single server)
 	for i := 0; i < 5; i++ {
@@ -650,7 +650,7 @@ func TestProxyRedirect(t *testing.T) {
 
 	upstream := proxy.NewUpstream("test", []*proxy.Server{
 		{Addr: backend.Listener.Addr().String()},
-	}, "round-robin", nil, nil, true, 0, 0, "", "", 0, 0, nil, nil, nil, false, nil, "", "", "", nil, nil)
+	}, "round-robin", nil, nil, true, 0, 0, "", "", 0, 0, nil, nil, nil, false, nil, "", "", "", nil, nil, nil, nil)
 
 	req := httptest.NewRequest("GET", "/", nil)
 	w := httptest.NewRecorder()
