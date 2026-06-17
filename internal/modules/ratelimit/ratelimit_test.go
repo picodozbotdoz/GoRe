@@ -8,7 +8,7 @@ import (
 )
 
 func TestRateLimiterAllow(t *testing.T) {
-	limiter := New("10/s", 10)
+	limiter := New("10/s", 10, 0, "")
 	for i := 0; i < 10; i++ {
 		if !limiter.Allow("test") {
 			t.Errorf("request %d should be allowed", i)
@@ -20,7 +20,7 @@ func TestRateLimiterAllow(t *testing.T) {
 }
 
 func TestRateLimiterRefill(t *testing.T) {
-	limiter := New("10/s", 10)
+	limiter := New("10/s", 10, 0, "")
 	for i := 0; i < 10; i++ {
 		limiter.Allow("test")
 	}
@@ -31,7 +31,7 @@ func TestRateLimiterRefill(t *testing.T) {
 }
 
 func TestRateLimiterServeHTTP(t *testing.T) {
-	limiter := New("1/s", 1)
+	limiter := New("1/s", 1, 0, "")
 	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { w.Write([]byte("ok")) })
 	handler := limiter.ServeHTTP(next)
 
@@ -48,5 +48,22 @@ func TestRateLimiterServeHTTP(t *testing.T) {
 	handler.ServeHTTP(w, req)
 	if w.Code != 429 {
 		t.Errorf("second request: status = %d, want 429", w.Code)
+	}
+}
+
+func TestRateLimiterCustomStatus(t *testing.T) {
+	limiter := New("1/s", 1, 503, "")
+	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { w.Write([]byte("ok")) })
+	handler := limiter.ServeHTTP(next)
+
+	req := httptest.NewRequest("GET", "/", nil)
+	req.RemoteAddr = "127.0.0.1:5678"
+	w := httptest.NewRecorder()
+	handler.ServeHTTP(w, req)
+
+	w = httptest.NewRecorder()
+	handler.ServeHTTP(w, req)
+	if w.Code != 503 {
+		t.Errorf("second request: status = %d, want 503", w.Code)
 	}
 }

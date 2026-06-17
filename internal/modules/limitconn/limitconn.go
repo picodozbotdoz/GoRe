@@ -1,6 +1,7 @@
 package limitconn
 
 import (
+	"log"
 	"net"
 	"net/http"
 	"strings"
@@ -8,18 +9,20 @@ import (
 )
 
 type Limiter struct {
-	mu     sync.Mutex
-	counts map[string]int
-	limit  int
+	mu       sync.Mutex
+	counts   map[string]int
+	limit    int
+	logLevel string
 }
 
-func New(limit int) *Limiter {
+func New(limit int, logLevel string) *Limiter {
 	if limit <= 0 {
 		return nil
 	}
 	return &Limiter{
-		counts: make(map[string]int),
-		limit:  limit,
+		counts:   make(map[string]int),
+		limit:    limit,
+		logLevel: logLevel,
 	}
 }
 
@@ -33,6 +36,9 @@ func (l *Limiter) ServeHTTP(next http.Handler) http.Handler {
 		l.mu.Lock()
 		if l.counts[ip] >= l.limit {
 			l.mu.Unlock()
+			if l.logLevel != "" {
+				log.Printf("[%s] connection limit exceeded for %s: %s %s", l.logLevel, ip, r.Method, r.URL.Path)
+			}
 			http.Error(w, "Too Many Connections", http.StatusServiceUnavailable)
 			return
 		}

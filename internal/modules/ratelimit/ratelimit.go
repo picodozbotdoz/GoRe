@@ -1,6 +1,7 @@
 package ratelimit
 
 import (
+	"log"
 	"net/http"
 	"sync"
 	"time"
@@ -41,13 +42,15 @@ func (tb *tokenBucket) allow() bool {
 }
 
 type Limiter struct {
-	buckets map[string]*tokenBucket
-	rate    float64
-	burst   int
-	mu      sync.RWMutex
+	buckets  map[string]*tokenBucket
+	rate     float64
+	burst    int
+	status   int
+	logLevel string
+	mu       sync.RWMutex
 }
 
-func New(rate string, burst int) *Limiter {
+func New(rate string, burst int, status int, logLevel string) *Limiter {
 	var r float64
 	if len(rate) >= 2 {
 		switch rate[len(rate)-1] {
@@ -65,7 +68,10 @@ func New(rate string, burst int) *Limiter {
 	if burst <= 0 {
 		burst = int(r)
 	}
-	return &Limiter{buckets: make(map[string]*tokenBucket), rate: r, burst: burst}
+	if status == 0 {
+		status = http.StatusTooManyRequests
+	}
+	return &Limiter{buckets: make(map[string]*tokenBucket), rate: r, burst: burst, status: status, logLevel: logLevel}
 }
 
 func (l *Limiter) getBucket(key string) *tokenBucket {
@@ -93,7 +99,10 @@ func (l *Limiter) ServeHTTP(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if !l.Allow(r.RemoteAddr) {
 			w.Header().Set("Retry-After", "1")
-			http.Error(w, "Too Many Requests", http.StatusTooManyRequests)
+			http.Error(w, http.StatusText(l.status), l.status)
+			if l.logLevel != "" {
+				log.Printf("[%s] rate limit exceeded for %s: %s %s", l.logLevel, r.RemoteAddr, r.Method, r.URL.Path)
+			}
 			return
 		}
 		next.ServeHTTP(w, r)

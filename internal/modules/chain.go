@@ -89,7 +89,7 @@ func BuildChain(cfg *config.ModulesConfig, next http.Handler) http.Handler {
 	}
 
 	if cfg.ErrorPage != nil {
-		handler = errorpage.New(cfg.ErrorPage)(handler)
+		handler = errorpage.New(cfg.ErrorPage.Pages)(handler)
 	}
 
 	if cfg.DefaultType != "" {
@@ -98,6 +98,14 @@ func BuildChain(cfg *config.ModulesConfig, next http.Handler) http.Handler {
 
 	if cfg.MergeSlashes != nil && *cfg.MergeSlashes {
 		handler = mergeslashes.New(true)(handler)
+	}
+
+	if cfg.ServerTokens != nil && !*cfg.ServerTokens {
+		serverTokensHandler := handler
+		handler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			serverTokensHandler.ServeHTTP(w, r)
+			w.Header().Del("Server")
+		})
 	}
 
 	handler = log.AccessMiddleware(

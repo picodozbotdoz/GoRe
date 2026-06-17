@@ -12,7 +12,7 @@ type handlerFunc func(http.ResponseWriter, *http.Request)
 func (f handlerFunc) ServeHTTP(w http.ResponseWriter, r *http.Request) { f(w, r) }
 
 func TestLimitConnAllowsUnderLimit(t *testing.T) {
-	limiter := New(5)
+	limiter := New(5, "")
 	handler := limiter.ServeHTTP(handlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(200)
 	}))
@@ -26,7 +26,7 @@ func TestLimitConnAllowsUnderLimit(t *testing.T) {
 }
 
 func TestLimitConnRejectsOverLimit(t *testing.T) {
-	limiter := New(2)
+	limiter := New(2, "")
 	handler := limiter.ServeHTTP(handlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(200)
 	}))
@@ -46,7 +46,7 @@ func TestLimitConnRejectsOverLimit(t *testing.T) {
 }
 
 func TestLimitConnDifferentIPs(t *testing.T) {
-	limiter := New(1)
+	limiter := New(1, "")
 	handler := limiter.ServeHTTP(handlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(200)
 	}))
@@ -68,7 +68,7 @@ func TestLimitConnDifferentIPs(t *testing.T) {
 
 func TestLimitConnNil(t *testing.T) {
 	var called bool
-	limiter := New(0)
+	limiter := New(0, "")
 	handler := limiter.ServeHTTP(handlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		called = true
 	}))
