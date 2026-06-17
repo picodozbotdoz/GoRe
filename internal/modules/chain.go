@@ -13,6 +13,7 @@ import (
 	"github.com/user/gore/internal/modules/errorpage"
 	"github.com/user/gore/internal/modules/gunzip"
 	"github.com/user/gore/internal/modules/gzip"
+	"github.com/user/gore/internal/modules/gzipstatic"
 	"github.com/user/gore/internal/modules/headers"
 	"github.com/user/gore/internal/modules/limitconn"
 	"github.com/user/gore/internal/modules/mapmodule"
@@ -26,6 +27,9 @@ func BuildChain(cfg *config.ModulesConfig, next http.Handler) http.Handler {
 	handler := next
 
 	if cfg.Gzip != nil && cfg.Gzip.Enabled {
+		if cfg.Gzip.Static {
+			handler = gzipstatic.New("")(handler)
+		}
 		handler = gzip.New(cfg.Gzip.Level, cfg.Gzip.Types).ServeHTTP(handler)
 	}
 

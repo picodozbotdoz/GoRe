@@ -26,10 +26,29 @@ type Listen struct {
 }
 
 type TLS struct {
-	Cert       string   `yaml:"cert"`
-	Key        string   `yaml:"key"`
-	Ciphers    []string `yaml:"ciphers,omitempty"`
-	MinVersion string   `yaml:"min_version,omitempty"`
+	Cert              string   `yaml:"cert"`
+	Key               string   `yaml:"key"`
+	Ciphers           []string `yaml:"ciphers,omitempty"`
+	MinVersion        string   `yaml:"min_version,omitempty"`
+	SessionTimeout    int      `yaml:"session_timeout,omitempty"`
+	ClientCertificate string   `yaml:"client_certificate,omitempty"`
+	VerifyClient      bool     `yaml:"verify_client,omitempty"`
+	VerifyDepth       int      `yaml:"verify_depth,omitempty"`
+	RejectHandshake   bool     `yaml:"reject_handshake,omitempty"`
+}
+
+func (t *TLS) GetSessionTimeout() int {
+	if t == nil || t.SessionTimeout == 0 {
+		return 300
+	}
+	return t.SessionTimeout
+}
+
+func (t *TLS) GetVerifyDepth() int {
+	if t == nil || t.VerifyDepth == 0 {
+		return 1
+	}
+	return t.VerifyDepth
 }
 
 type HTTP2 struct {
@@ -82,15 +101,20 @@ type Server struct {
 }
 
 type Location struct {
-	Path         string            `yaml:"path"`
-	Root         string            `yaml:"root,omitempty"`
-	Proxy        *Proxy            `yaml:"proxy,omitempty"`
-	Return       string            `yaml:"return,omitempty"`
-	Rewrite      *Rewrite          `yaml:"rewrite,omitempty"`
-	Autoindex    *bool             `yaml:"autoindex,omitempty"`
-	CacheControl string            `yaml:"cache_control,omitempty"`
-	TryFiles     []string          `yaml:"try_files,omitempty"`
+	Path           string            `yaml:"path"`
+	Root           string            `yaml:"root,omitempty"`
+	Alias          string            `yaml:"alias,omitempty"`
+	Proxy          *Proxy            `yaml:"proxy,omitempty"`
+	Return         string            `yaml:"return,omitempty"`
+	Rewrite        *Rewrite          `yaml:"rewrite,omitempty"`
+	Autoindex      *bool             `yaml:"autoindex,omitempty"`
+	CacheControl   string            `yaml:"cache_control,omitempty"`
+	TryFiles       []string          `yaml:"try_files,omitempty"`
 	AuthRequest    string            `yaml:"auth_request,omitempty"`
+	AuthRequestSet map[string]string `yaml:"auth_request_set,omitempty"`
+	LimitExcept    []string          `yaml:"limit_except,omitempty"`
+	Internal       bool              `yaml:"internal,omitempty"`
+	Satisfy        string            `yaml:"satisfy,omitempty"`
 	SubFilter      map[string]string `yaml:"sub_filter,omitempty"`
 	SubFilterOnce  *bool             `yaml:"sub_filter_once,omitempty"`
 	SubFilterTypes []string          `yaml:"sub_filter_types,omitempty"`
@@ -104,12 +128,20 @@ type Rewrite struct {
 }
 
 type Proxy struct {
-	Upstream           string `yaml:"upstream"`
-	Buffering          *bool  `yaml:"buffering,omitempty"`
-	BufferSize         string `yaml:"buffer_size,omitempty"`
-	Redirect           string `yaml:"redirect,omitempty"`
-	PassRequestHeaders *bool  `yaml:"pass_request_headers,omitempty"`
-	PassRequestBody    *bool  `yaml:"pass_request_body,omitempty"`
+	Upstream           string            `yaml:"upstream"`
+	Buffering          *bool             `yaml:"buffering,omitempty"`
+	BufferSize         string            `yaml:"buffer_size,omitempty"`
+	RequestBuffering   *bool             `yaml:"request_buffering,omitempty"`
+	InterceptErrors    bool              `yaml:"intercept_errors,omitempty"`
+	ErrorPages         map[int]string    `yaml:"error_pages,omitempty"`
+	CookieDomain       string            `yaml:"cookie_domain,omitempty"`
+	CookiePath         string            `yaml:"cookie_path,omitempty"`
+	Method             string            `yaml:"method,omitempty"`
+	Buffers            string            `yaml:"buffers,omitempty"`
+	BusyBuffersSize    string            `yaml:"busy_buffers_size,omitempty"`
+	Redirect           string            `yaml:"redirect,omitempty"`
+	PassRequestHeaders *bool             `yaml:"pass_request_headers,omitempty"`
+	PassRequestBody    *bool             `yaml:"pass_request_body,omitempty"`
 }
 
 type Upstream struct {
@@ -120,6 +152,7 @@ type Upstream struct {
 	Retries             int                `yaml:"retries,omitempty"`
 	HealthCheck         *HealthCheckConfig `yaml:"health_check,omitempty"`
 	Cache               *CacheConfig       `yaml:"cache,omitempty"`
+	ProxySSL            *ProxySSL          `yaml:"proxy_ssl,omitempty"`
 	Keepalive           int                `yaml:"keepalive,omitempty"`
 	KeepaliveTimeout    int                `yaml:"keepalive_timeout,omitempty"`
 	KeepaliveRequests   int                `yaml:"keepalive_requests,omitempty"`
@@ -130,6 +163,18 @@ type Upstream struct {
 	NextUpstream        string             `yaml:"next_upstream,omitempty"`
 	NextUpstreamTries   int                `yaml:"next_upstream_tries,omitempty"`
 	NextUpstreamTimeout int                `yaml:"next_upstream_timeout,omitempty"`
+}
+
+type ProxySSL struct {
+	Verify             bool   `yaml:"verify,omitempty"`
+	Certificate        string `yaml:"certificate,omitempty"`
+	CertificateKey     string `yaml:"certificate_key,omitempty"`
+	TrustedCertificate string `yaml:"trusted_certificate,omitempty"`
+	Protocols          string `yaml:"protocols,omitempty"`
+	Ciphers            string `yaml:"ciphers,omitempty"`
+	ServerName         string `yaml:"server_name,omitempty"`
+	SessionReuse       *bool  `yaml:"session_reuse,omitempty"`
+	Name               string `yaml:"name,omitempty"`
 }
 
 type HealthCheckConfig struct {
@@ -201,28 +246,29 @@ type UpstreamServer struct {
 }
 
 type ModulesConfig struct {
-	Gzip              *GzipConfig      `yaml:"gzip,omitempty"`
-	Brotli            *BrotliConfig    `yaml:"brotli,omitempty"`
-	Access            *AccessConfig    `yaml:"access,omitempty"`
-	RateLimit         *RateLimitConfig `yaml:"rate_limit,omitempty"`
-	LimitConn         *LimitConnConfig `yaml:"limit_conn,omitempty"`
-	Headers           *HeadersConfig   `yaml:"headers,omitempty"`
-	AccessLog         *AccessLogConfig `yaml:"access_log,omitempty"`
-	ErrorLog          *ErrorLogConfig  `yaml:"error_log,omitempty"`
-	ClientMaxBodySize string           `yaml:"client_max_body_size,omitempty"`
-	Status            *StatusConfig    `yaml:"status,omitempty"`
-	RealIP            *RealIPConfig    `yaml:"real_ip,omitempty"`
-	BasicAuth         *BasicAuthConfig `yaml:"basic_auth,omitempty"`
-	Map               []MapConfig      `yaml:"map,omitempty"`
-	SplitClients      []SplitConfig    `yaml:"split_clients,omitempty"`
-	Gunzip            *bool            `yaml:"gunzip,omitempty"`
-	ErrorPage         *ErrorPageConfig `yaml:"error_page,omitempty"`
-	ServerTokens      *bool            `yaml:"server_tokens,omitempty"`
-	DefaultType       string           `yaml:"default_type,omitempty"`
-	MergeSlashes      *bool            `yaml:"merge_slashes,omitempty"`
-	ClientBodyTimeout int             `yaml:"client_body_timeout,omitempty"`
-	ClientHeaderTimeout int           `yaml:"client_header_timeout,omitempty"`
-	SendTimeout       int              `yaml:"send_timeout,omitempty"`
+	Gzip                *GzipConfig      `yaml:"gzip,omitempty"`
+	Brotli              *BrotliConfig    `yaml:"brotli,omitempty"`
+	Access              *AccessConfig    `yaml:"access,omitempty"`
+	RateLimit           *RateLimitConfig `yaml:"rate_limit,omitempty"`
+	LimitConn           *LimitConnConfig `yaml:"limit_conn,omitempty"`
+	Headers             *HeadersConfig   `yaml:"headers,omitempty"`
+	AccessLog           *AccessLogConfig `yaml:"access_log,omitempty"`
+	ErrorLog            *ErrorLogConfig  `yaml:"error_log,omitempty"`
+	ClientMaxBodySize   string           `yaml:"client_max_body_size,omitempty"`
+	Status              *StatusConfig    `yaml:"status,omitempty"`
+	RealIP              *RealIPConfig    `yaml:"real_ip,omitempty"`
+	BasicAuth           *BasicAuthConfig `yaml:"basic_auth,omitempty"`
+	Map                 []MapConfig      `yaml:"map,omitempty"`
+	SplitClients        []SplitConfig    `yaml:"split_clients,omitempty"`
+	Gunzip              *bool            `yaml:"gunzip,omitempty"`
+	ErrorPage           *ErrorPageConfig `yaml:"error_page,omitempty"`
+	ServerTokens        *bool            `yaml:"server_tokens,omitempty"`
+	DefaultType         string           `yaml:"default_type,omitempty"`
+	MergeSlashes        *bool            `yaml:"merge_slashes,omitempty"`
+	ClientBodyTimeout   int              `yaml:"client_body_timeout,omitempty"`
+	ClientHeaderTimeout int              `yaml:"client_header_timeout,omitempty"`
+	SendTimeout         int              `yaml:"send_timeout,omitempty"`
+	Resolver            string           `yaml:"resolver,omitempty"`
 }
 
 type SplitConfig struct {
@@ -312,7 +358,8 @@ type GzipConfig struct {
 	MinLength int      `yaml:"min_length,omitempty"`
 	Vary      bool     `yaml:"vary,omitempty"`
 	Proxied   bool     `yaml:"proxied,omitempty"`
-	Disable   string   `yaml:"disable,omitempty"` // User-Agent pattern
+	Disable   string   `yaml:"disable,omitempty"`
+	Static    bool     `yaml:"static,omitempty"`
 }
 
 type BrotliConfig struct {
