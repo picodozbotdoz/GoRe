@@ -45,15 +45,15 @@ Tracked, verified, runnable configuration examples. Each example is in `examples
 
 | # | Feature | Dir | Config | Before | After | Test | Verified | Logging | Notes |
 |---|---------|-----|--------|--------|-------|------|----------|---------|-------|
-| 14 | Load balancing | `examples/load-balancing/` | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | Round-robin across backends |
-| 15 | Proxy timeouts | `examples/proxy-timeouts/` | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | Connect/read/send timeout config |
-| 16 | Proxy retry | `examples/proxy-retry/` | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | Automatic failover on 5xx |
-| 17 | WebSocket proxy | `examples/websocket-proxy/` | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | Bidirectional streaming |
-| 18 | Proxy cache | `examples/proxy-cache/` | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | In-memory response caching |
-| 19 | Proxy buffering | `examples/proxy-buffering/` | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | Streaming vs buffered mode |
-| 20 | Upstream keepalive | `examples/upstream-keepalive/` | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | Connection pooling |
-| 21 | Set headers | `examples/proxy-headers/` | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | Custom upstream headers |
-| 22 | Health checks | `examples/health-check/` | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | Active backend probing |
+| 14 | Load balancing | `examples/load-balancing/` | ✅ | ✅ | ✅ | ✅ | ✅ | ⬜ | Round-robin across backends |
+| 15 | Proxy timeouts | `examples/proxy-timeouts/` | ✅ | ✅ | ✅ | ✅ | ✅ | ⬜ | Connect/read/send timeout config |
+| 16 | Proxy retry | `examples/proxy-retry/` | ✅ | ✅ | ✅ | ✅ | ✅ | ⬜ | Automatic failover on 5xx |
+| 17 | WebSocket proxy | `examples/websocket-proxy/` | ✅ | ✅ | ✅ | ✅ | ✅ | ⬜ | Bidirectional streaming |
+| 18 | Proxy cache | `examples/proxy-cache/` | ✅ | ✅ | ✅ | ✅ | ✅ | ⬜ | In-memory response caching |
+| 19 | Proxy buffering | `examples/proxy-buffering/` | ✅ | ✅ | ✅ | ✅ | ✅ | ⬜ | Streaming vs buffered mode |
+| 20 | Upstream keepalive | `examples/upstream-keepalive/` | ✅ | ✅ | ✅ | ✅ | ✅ | ⬜ | Connection pooling |
+| 21 | Set headers | `examples/proxy-headers/` | ✅ | ✅ | ✅ | ✅ | ✅ | ⬜ | Custom upstream headers |
+| 22 | Health checks | `examples/health-check/` | ✅ | ✅ | ✅ | ✅ | ✅ | ⬜ | Active backend probing |
 
 ## Priority 5 — Advanced Features
 
@@ -94,9 +94,9 @@ Tracked, verified, runnable configuration examples. Each example is in `examples
 | P1 Core | 3 | 3 | 100% |
 | P2 Protocol | 4 | 4 | 100% |
 | P3 Security | 6 | 6 | 100% |
-| P3 Security | 6 | 0 | 0% |
+| P4 Proxy | 9 | 9 | 100% |
 | P4 Proxy | 9 | 0 | 0% |
 | P5 Advanced | 11 | 0 | 0% |
 | P6 Observability | 3 | 0 | 0% |
 | P7 Full Stack | 3 | 0 | 0% |
-| **Total** | **39** | **13** | **33%** |
+| **Total** | **39** | **22** | **56%** |
