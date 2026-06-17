@@ -83,9 +83,9 @@ Tracked, verified, runnable configuration examples. Each example is in `examples
 
 | # | Feature | Dir | Config | Before | After | Test | Verified | Logging | Notes |
 |---|---------|-----|--------|--------|-------|------|----------|---------|-------|
-| 37 | Production stack | `examples/production/` | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | All modules combined |
-| 38 | API gateway | `examples/api-gateway/` | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | Auth + rate limit + proxy |
-| 39 | Multi-port | `examples/multi-port/` | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | Multiple listeners, protocols |
+| 37 | Production stack | `examples/production/` | ✅ | ✅ | ✅ | ✅ | ✅ | ⬜ | All modules combined |
+| 38 | API gateway | `examples/api-gateway/` | ✅ | ✅ | ✅ | ✅ | ✅ | ⬜ | Auth + rate limit + proxy |
+| 39 | Multi-port | `examples/multi-port/` | ✅ | ✅ | ✅ | ✅ | ✅ | ⬜ | Multiple listeners, protocols |
 
 ## Progress Summary
 
@@ -97,5 +97,6 @@ Tracked, verified, runnable configuration examples. Each example is in `examples
 | P4 Proxy | 9 | 9 | 100% |
 | P5 Advanced | 11 | 11 | 100% |
 | P6 Observability | 3 | 3 | 100% |
+| P7 Full Stack | 3 | 3 | 100% |
 | P7 Full Stack | 3 | 0 | 0% |
-| **Total** | **39** | **36** | **92%** |
+| **Total** | **39** | **39** | **100%** |
