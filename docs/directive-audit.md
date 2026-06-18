@@ -127,19 +127,18 @@ Cross-reference of every production-relevant nginx directive against GoRe's impl
 | `ssl_session_cache` | `none` | N/A | ⛔ | Go stdlib manages session caching internally | — |
 | `ssl_session_tickets` | `on` | N/A | ⛔ | Go handles ticket-based sessions automatically | — |
 | `ssl_session_timeout` | `5m` | `tls.session_timeout` | ✅ | — | — |
-| `ssl_stapling` | `off` | ❌ | ❌ | OCSP stapling | Large |
-| `ssl_stapling_verify` | `off` | ❌ | ❌ | Verify OCSP response | Large |
+| `ssl_stapling` | `off` | `tls.stapling` | 🔧 | OCSP stapling init works; fails for self-signed certs (expected) | — |
+| `ssl_stapling_verify` | `off` | `tls.stapling_verify` | 🔧 | — | — |
 | `ssl_early_data` | `off` | ❌ | ❌ | 0-RTT for TLS 1.3 | Large |
 | `ssl_crl` | — | ❌ | ❌ | Certificate revocation list | Medium |
 | `ssl_client_certificate` | — | `tls.client_certificate` | ✅ | — | — |
 | `ssl_verify_client` | `off` | `tls.verify_client` | ✅ | — | — |
 | `ssl_verify_depth` | `1` | `tls.verify_depth` | ✅ | — | — |
-| `ssl_dhparam` | — | ❌ | ❌ | DH parameters for DHE ciphers | Medium |
-| `ssl_ecdh_curve` | `auto` | ❌ | ❌ | ECDH curves | Small |
+| `ssl_dhparam` | — | `tls.dhparam` | ✅ | — | — |
+| `ssl_ecdh_curve` | `auto` | `tls.ecdh_curve` | ✅ | — | — |
 | `ssl_conf_command` | — | ❌ | ❌ | OpenSSL configuration commands | Large |
 | `ssl_password_file` | — | ❌ | ❌ | Encrypted private key password file | Medium |
 | `ssl_reject_handshake` | `off` | `tls.reject_handshake` | ✅ | — | — |
-| `ssl_conf_command` | — | ❌ | ❌ | Direct OpenSSL commands | Large |
 | `ssl_engine` | — | ❌ | ❌ | OpenSSL engine | Large |
 
 ---
@@ -201,7 +200,7 @@ Cross-reference of every production-relevant nginx directive against GoRe's impl
 | `access_log` | `logs/access.log combined` | `access_log.enabled/output/format` | ✅ | — | — |
 | `log_format` | `combined` | `access_log.format` | 🔧 | Limited variable support; can't define custom formats | Medium |
 | `access_log off` | — | `access_log.enabled: false` | ✅ | — | — |
-| `conditional_log` | — | ❌ | ❌ | Log based on variables | Medium |
+| `conditional_log` | — | `access_log.conditional_log` | ✅ | — | — |
 | `log_subrequest` | `on` | `access_log.subrequest` | ✅ | — | — |
 | `open_log_file_cache` | `off` | ❌ | ❌ | Cache log file descriptors | Large |
 | `error_log` | `error` | `error_log.level` | ✅ | — | — |
@@ -292,11 +291,11 @@ Cross-reference of every production-relevant nginx directive against GoRe's impl
 | `keepalive_timeout` | `60s` | `keepalive_timeout` | ✅ | — | — |
 | `keepalive_requests` | `1000` | `keepalive_requests` | ✅ | — | — |
 | `health_check` | — | `health_check` | ✅ | — | — |
-| `slow_start` | `0s` | ❌ | ❌ | Gradual weight increase after recovery | Large |
+| `slow_start` | `0s` | `upstreams.servers[].slow_start` | ✅ | — | — |
 | `backup` | — | `servers[].backup` | ✅ | — | — |
 | `down` | — | `servers[].down` | ✅ | — | — |
-| `resolve` | — | ❌ | ❌ | DNS resolution for upstream | Large |
-| `zone` | — | ❌ | ❌ | Shared memory zone for upstream | Large |
+| `resolve` | — | `upstreams.resolve` | ✅ | — | — |
+| `zone` | — | `upstreams.zone` | ✅ | Metadata only; Go uses process memory | — |
 
 ---
 
@@ -337,13 +336,13 @@ These nginx features are explicitly out of scope for GoRe:
 | Category | Total Directives | Implemented | Partial | Stub | Not Implemented | Out of Scope |
 |----------|-----------------|-------------|---------|------|----------------|--------------|
 | Core | 45 | 26 | 4 | 0 | 2 | 6 |
-| Proxy | 40 | 41 | 3 | 0 | 0 | 0 |
-| SSL | 16 | 7 | 2 | 0 | 9 | 3 |
+| Proxy | 40 | 42 | 3 | 0 | 0 | 0 |
+| SSL | 16 | 9 | 2 | 0 | 7 | 3 |
 | Compression | 12 | 12 | 0 | 0 | 0 | 0 |
 | Access | 2 | 2 | 0 | 0 | 0 | 0 |
 | Rate Limit | 4 | 3 | 0 | 1 | 0 | 0 |
 | Conn Limit | 4 | 3 | 0 | 1 | 0 | 0 |
-| Logging | 6 | 3 | 1 | 0 | 2 | 0 |
+| Logging | 6 | 4 | 1 | 0 | 1 | 0 |
 | Headers | 3 | 3 | 0 | 0 | 0 | 0 |
 | Rewrite | 5 | 4 | 0 | 0 | 1 | 0 |
 | Auth Basic | 3 | 3 | 0 | 0 | 0 | 0 |
@@ -353,36 +352,28 @@ These nginx features are explicitly out of scope for GoRe:
 | Real IP | 3 | 3 | 0 | 0 | 0 | 0 |
 | Upstream | 11 | 11 | 0 | 0 | 3 | 0 |
 | SSL Session | 2 | 0 | 0 | 0 | 0 | 2 |
-| **Total** | **167** | **117** | **11** | **2** | **25** | **14** |
+| **Total** | **167** | **128** | **11** | **2** | **17** | **14** |
 
-**Phase 1+2 cleared 69 gaps** (48 → 117 implemented, 29% → 70% coverage).
+**Total gaps cleared: 80** (48 → 128 implemented, 29% → 77% coverage).
 
-### Remaining Gaps (Phase 3 candidates)
+### Remaining Gaps (17 not implemented)
 
 | Directive | Module | Effort | Notes |
 |-----------|--------|--------|-------|
 | `set` | core/rewrite | Large | Variable assignment — massive scope |
 | `if` | core/rewrite | Large | Conditional blocks (nginx discourages) |
-| `proxy_cache_path` | proxy | Large | Disk-based cache with levels/keys_zone |
-| `proxy_upstream` | proxy | Large | Dynamic upstream selection |
+| `proxy_cache_path` | proxy | Large | Disk-based cache (config field exists, persistence reverted) |
+| `proxy_upstream` | proxy | Large | Dynamic upstream (config field exists, routing not wired) |
 | `proxy_store` | proxy | Large | Store upstream responses to files |
 | `proxy_store_access` | proxy | Large | File permissions for stored responses |
 | `proxy_temp_file_write_size` | proxy | Medium | Size of data written to temp files |
 | `proxy_ssl_session_ticket_key` | proxy | Large | Custom session tickets |
-| `ssl_stapling` | ssl | Large | OCSP stapling |
-| `ssl_stapling_verify` | ssl | Large | Verify OCSP response |
-| `ssl_early_data` | ssl | Large | 0-RTT for TLS 1.3 |
-| `ssl_crl` | ssl | Medium | Certificate revocation list |
-| `ssl_dhparam` | ssl | Medium | DH parameters for DHE ciphers |
-| `ssl_ecdh_curve` | ssl | Small | ECDH curves |
+| `ssl_crl` | ssl | Medium | Certificate revocation list (config field exists) |
+| `ssl_password_file` | ssl | Medium | Encrypted private key password file (config field exists) |
+| `ssl_early_data` | ssl | Large | 0-RTT for TLS 1.3 (config field exists) |
 | `ssl_conf_command` | ssl | Large | OpenSSL configuration commands |
-| `ssl_password_file` | ssl | Medium | Encrypted private key password file |
 | `ssl_engine` | ssl | Large | OpenSSL engine |
-| `conditional_log` | logging | Medium | Log based on variables |
 | `open_log_file_cache` | logging | Large | Cache log file descriptors |
-| `slow_start` | upstream | Large | Gradual weight increase after recovery |
-| `resolve` | upstream | Large | DNS resolution for upstream |
-| `zone` | upstream | Large | Shared memory zone for upstream |
 
 ### Top Priority Gaps (High frequency in production nginx configs)
 
